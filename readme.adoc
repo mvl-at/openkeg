@@ -1,0 +1,18 @@
+= Keg
+Richard Stöckl <richard.stoeckl@aon.at>
+
+Keg -- the lightweight backend of the Musikverein Leopoldsdorf.
+
+== Build
+
+The project can be built with
+
+[source, shell script]
+----
+cargo build --release
+----
+
+== Development
+
+In order to use the pre-commit hook for formatting the code before every commit, just run `make` in the project root once.
+
