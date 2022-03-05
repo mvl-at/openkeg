@@ -1,0 +1,16 @@
+[package]
+name = "keg"
+version = "0.1.0"
+edition = "2021"
+authors = ["Richard Stöckl"]
+license = "GPLv2"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rocket = { version = "0.5.0-rc.1", features = ["json"] }
+serde = "1.0.136"
+serde_json = { version = "1.0.79", features = ["preserve_order"] }
+rocket_okapi = { version = "0.8.0-rc.1", features = ["swagger"] }
+schemars = "0.8.8"
+okapi = { version = "0.7.0-rc.1", features = ["impl_json_schema", "preserve_order"] }
