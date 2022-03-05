@@ -82,12 +82,12 @@ fn custom_openapi_spec() -> OpenApi {
         },
         servers: vec![
             Server {
-                url: "http://127.0.0.1:8000/".to_owned(),
+                url: "http://localhost:8000/api/v1/".to_owned(),
                 description: Some("Localhost".to_owned()),
                 ..Default::default()
             },
             Server {
-                url: "https://keg.mvl.at/".to_owned(),
+                url: "https://keg.mvl.at/api/v1/".to_owned(),
                 description: Some("Production Server".to_owned()),
                 ..Default::default()
             },
