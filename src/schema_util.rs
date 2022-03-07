@@ -26,7 +26,7 @@ pub trait SchemaExample {
 /// A page for pagination which is used for huge collections as the score archive.
 #[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(crate = "rocket::serde", rename_all = "camelCase")]
-#[schemars(example = "Self::example")]
+#[schemars(example = "Self::example", title = "ResultPage")]
 pub struct Page<D>
 where
     D: Serialize + JsonSchema + SchemaExample,
