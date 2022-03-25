@@ -73,6 +73,9 @@ pub struct Book {
 }
 
 /// A page which represents where a particular score is located in a book.
+/// A page can only contain one score at maximum.
+/// When a page contains multiple scores, only the first one will be stored here.
+/// The other scores should be persisted via references.
 #[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(crate = "rocket::serde", rename_all = "camelCase")]
 #[schemars(example = "Self::example")]
@@ -84,6 +87,25 @@ pub struct Page {
     /// The number where the page ends at.
     /// The page ends at `begin` if absent.
     pub end: Option<PageNumber>,
+    /// The score which is placed at this page.
+    /// This may be null if the backend does not transfer the score itself.
+    /// Other scores may be found via references.
+    pub score: Option<Score>,
+}
+
+/// A representation of a page during its insert or update in the context of a book.
+/// The basic rules of [Page] apply here too as this is only a different representation.
+#[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(crate = "rocket::serde", rename_all = "camelCase")]
+#[schemars(example = "Self::example")]
+pub struct PagePlacement {
+    /// The number where the page begins at.
+    pub begin: PageNumber,
+    /// The number where the page ends at.
+    /// The page ends at [begin] if absent.
+    pub end: Option<PageNumber>,
+    /// The id of the [Score] which is places at this page.
+    pub score: i64,
 }
 
 /// A page-number.
@@ -164,6 +186,17 @@ impl SchemaExample for Page {
             book: 5,
             begin: Default::default(),
             end: None,
+            score: Default::default(),
+        }
+    }
+}
+
+impl SchemaExample for PagePlacement {
+    fn example() -> Self {
+        Self {
+            score: 3,
+            begin: Default::default(),
+            end: Default::default(),
         }
     }
 }

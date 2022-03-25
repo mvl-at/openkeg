@@ -18,7 +18,7 @@
 use rocket::serde::json::Json;
 use rocket_okapi::openapi;
 
-use crate::archive::model::{Book, Score, ScoreSearchParameters};
+use crate::archive::model::{Book, Page, PageNumber, PagePlacement, Score, ScoreSearchParameters};
 use crate::schema_util;
 use crate::schema_util::SchemaExample;
 
@@ -75,9 +75,24 @@ pub fn put_book(book: Json<Book>) -> Json<Book> {
 #[delete("/book/<id>")]
 pub fn delete_book(id: i64) {}
 
-/// Return the pages of a book in the correct by its id.
+/// Return the pages of a book in the correct order by their id.
 #[openapi(tag = "Archive")]
-#[get("/book/<id>/pages")]
-pub fn get_book_pages(id: i64) -> Json<Vec<Book>> {
-    Json(vec![Book::example()])
+#[get("/book/<id>/content")]
+pub fn get_book_content(id: i64) -> Json<Vec<Page>> {
+    Json(vec![Page::example()])
 }
+
+/// Place a score at a page in a book.
+/// This will create a whole new page if necessary when no page with `begin` of this page exists in this book.
+/// All non identifying attributes will be overwritten in the persistence such as the page `end` as well as the score.
+#[openapi(tag = "Archive")]
+#[put("/book/<id>/page", data = "<page>")]
+pub fn put_book_page(id: i64, page: Json<PagePlacement>) -> Json<Page> {
+    Json(Page::example())
+}
+
+/// Delete a page entry from a book.
+/// The score itself will remain in the persistence.
+#[openapi(tag = "Archive")]
+#[delete("/book/<id>/page", data = "<page>")]
+pub fn delete_book_page(id: i64, page: Json<PageNumber>) {}

@@ -32,6 +32,8 @@ pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, O
         controller::post_book,
         controller::put_book,
         controller::delete_book,
-        controller::get_book_pages
+        controller::get_book_content,
+        controller::put_book_page,
+        controller::delete_book_page
     ]
 }
