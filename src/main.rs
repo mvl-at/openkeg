@@ -19,6 +19,7 @@
 extern crate rocket;
 
 use figment::Figment;
+use ldap3::Ldap;
 use okapi::openapi3::OpenApi;
 use rocket::fairing::AdHoc;
 use rocket::{Build, Rocket};
@@ -41,15 +42,19 @@ async fn main() {
         eprintln!("failed to read configuration");
         return;
     }
-    ldap::open_session(config_result.unwrap()).await;
-    let server_result = create_server(figment);
+    let ldap_result = ldap::open_session(config_result.unwrap()).await;
+    if ldap_result.is_err() {
+        eprintln!("failed to connect to the ldap server");
+        return;
+    }
+    let server_result = create_server(figment, ldap_result.unwrap());
     match server_result.launch().await {
         Ok(()) => eprintln!("shutdown keg!"),
         Err(err) => eprintln!("failed to start: {}", err.to_string()),
     }
 }
 
-fn create_server(figment: Figment) -> Rocket<Build> {
+fn create_server(figment: Figment, ldap: Ldap) -> Rocket<Build> {
     let custom_route_spec = (vec![], custom_openapi_spec());
     let openapi_settings = openapi_settings();
     let mut rocket = rocket::custom(figment)
@@ -60,6 +65,7 @@ fn create_server(figment: Figment) -> Rocket<Build> {
                 ..Default::default()
             }),
         )
+        .manage(ldap)
         .attach(AdHoc::config::<config::Config>());
     mount_endpoints_and_merged_docs! {
         rocket, "/api/v1".to_owned(), openapi_settings,

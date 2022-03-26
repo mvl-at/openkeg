@@ -15,11 +15,11 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-use ldap3::{LdapConnAsync, LdapConnSettings};
+use ldap3::{Ldap, LdapConnAsync};
 
 use crate::config::Config;
 
-pub async fn open_session(config: Config) {
+pub async fn open_session(config: Config) -> Result<Ldap, ()> {
     let ldap_config = config.ldap;
     eprintln!("open session to ldap server: {}", ldap_config.server);
     let ldap_result = LdapConnAsync::new(&*ldap_config.server).await;
@@ -28,7 +28,7 @@ pub async fn open_session(config: Config) {
             "failed to open ldap session: {:#?}",
             ldap_result.err().unwrap()
         );
-        return;
+        return Err(());
     }
     let (conn, mut ldap) = ldap_result.unwrap();
     ldap3::drive!(conn);
@@ -46,4 +46,5 @@ pub async fn open_session(config: Config) {
             eprintln!("bind result: {}", result.unwrap());
         }
     }
+    Ok(ldap)
 }
