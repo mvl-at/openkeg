@@ -19,6 +19,7 @@ use rocket::serde::json::Json;
 use rocket_okapi::openapi;
 
 use crate::archive::model::{Book, Page, PageNumber, PagePlacement, Score, ScoreSearchParameters};
+use crate::errors::Result;
 use crate::schema_util;
 use crate::schema_util::SchemaExample;
 
@@ -26,60 +27,64 @@ use crate::schema_util::SchemaExample;
 /// The parameters specify the value itself, the fields to search for and the ordering.
 #[openapi(tag = "Archive")]
 #[get("/score?<params..>")]
-pub fn search_scores(params: ScoreSearchParameters) -> Json<schema_util::Page<Score>> {
-    Json(schema_util::Page::example())
+pub fn search_scores(params: ScoreSearchParameters) -> Result<schema_util::Page<Score>> {
+    Ok(Json(schema_util::Page::example()))
 }
 
 /// Return a single score.
 #[openapi(tag = "Archive")]
 #[get("/score/<id>")]
-pub fn get_score(id: i64) -> Json<Score> {
-    Json(Score::example())
+pub fn get_score(id: i64) -> Result<Score> {
+    Ok(Json(Score::example()))
 }
 
 /// Update an already existing score by its id.
 #[openapi(tag = "Archive")]
 #[put("/score/<id>", data = "<score>")]
-pub fn put_score(id: i64, score: Json<Score>) -> Json<Score> {
-    Json(Score::example())
+pub fn put_score(id: i64, score: Json<Score>) -> Result<Score> {
+    Ok(Json(Score::example()))
 }
 
 /// Delete a score by its id.
 #[openapi(tag = "Archive")]
 #[delete("/score/<id>")]
-pub fn delete_score(id: i64) {}
+pub fn delete_score(id: i64) -> Result<()> {
+    Ok(Json(()))
+}
 
 /// Return a book by its id.
 #[openapi(tag = "Archive")]
 #[get("/book/<id>")]
-pub fn get_book(id: i64) -> Json<Book> {
-    Json(Book::example())
+pub fn get_book(id: i64) -> Result<Book> {
+    Ok(Json(Book::example()))
 }
 
 /// Create a new book.
 #[openapi(tag = "Archive")]
 #[post("/book", data = "<book>")]
-pub fn post_book(book: Json<Book>) -> Json<Book> {
-    Json(Book::example())
+pub fn post_book(book: Json<Book>) -> Result<Book> {
+    Ok(Json(Book::example()))
 }
 
 /// Update an already existing book by its id.
 #[openapi(tag = "Archive")]
 #[put("/book", data = "<book>")]
-pub fn put_book(book: Json<Book>) -> Json<Book> {
-    Json(Book::example())
+pub fn put_book(book: Json<Book>) -> Result<Book> {
+    Ok(Json(Book::example()))
 }
 
 /// Delete a book by its id.
 #[openapi(tag = "Archive")]
 #[delete("/book/<id>")]
-pub fn delete_book(id: i64) {}
+pub fn delete_book(id: i64) -> Result<()> {
+    Ok(Json(()))
+}
 
 /// Return the pages of a book in the correct order by their id.
 #[openapi(tag = "Archive")]
 #[get("/book/<id>/content")]
-pub fn get_book_content(id: i64) -> Json<Vec<Page>> {
-    Json(vec![Page::example()])
+pub fn get_book_content(id: i64) -> Result<Vec<Page>> {
+    Ok(Json(vec![Page::example()]))
 }
 
 /// Place a score at a page in a book.
@@ -87,12 +92,14 @@ pub fn get_book_content(id: i64) -> Json<Vec<Page>> {
 /// All non identifying attributes will be overwritten in the persistence such as the page `end` as well as the score.
 #[openapi(tag = "Archive")]
 #[put("/book/<id>/page", data = "<page>")]
-pub fn put_book_page(id: i64, page: Json<PagePlacement>) -> Json<Page> {
-    Json(Page::example())
+pub fn put_book_page(id: i64, page: Json<PagePlacement>) -> Result<Page> {
+    Ok(Json(Page::example()))
 }
 
 /// Delete a page entry from a book.
 /// The score itself will remain in the persistence.
 #[openapi(tag = "Archive")]
 #[delete("/book/<id>/page", data = "<page>")]
-pub fn delete_book_page(id: i64, page: Json<PageNumber>) {}
+pub fn delete_book_page(id: i64, page: Json<PageNumber>) -> Result<()> {
+    Ok(Json(()))
+}

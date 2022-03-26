@@ -20,10 +20,11 @@ extern crate rocket;
 
 use okapi::openapi3::OpenApi;
 use rocket::{Build, Rocket};
-use rocket_okapi::settings::OpenApiSettings;
 use rocket_okapi::{mount_endpoints_and_merged_docs, swagger_ui::*};
+use rocket_okapi::settings::OpenApiSettings;
 
 mod archive;
+mod errors;
 mod schema_util;
 
 #[rocket::main]
@@ -48,7 +49,8 @@ fn create_server() -> Rocket<Build> {
         rocket, "/api/v1".to_owned(), openapi_settings,
         "/" => custom_route_spec,
         "/archive" => archive::get_routes_and_docs(&openapi_settings)
-    };
+    }
+    ;
     rocket
 }
 
