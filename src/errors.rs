@@ -23,7 +23,7 @@ use rocket::{
     response::{self, Responder, Response},
 };
 use rocket_okapi::okapi::openapi3::Responses;
-use rocket_okapi::okapi::schemars::{self, Map};
+use rocket_okapi::okapi::schemars::{self};
 use rocket_okapi::{gen::OpenApiGenerator, response::OpenApiResponderInner, OpenApiError};
 
 pub type Result<T> = std::result::Result<rocket::serde::json::Json<T>, Error>;

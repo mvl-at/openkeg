@@ -19,39 +19,59 @@
 extern crate rocket;
 
 use okapi::openapi3::OpenApi;
+use rocket::fairing::AdHoc;
 use rocket::{Build, Rocket};
-use rocket_okapi::{mount_endpoints_and_merged_docs, swagger_ui::*};
 use rocket_okapi::settings::OpenApiSettings;
+use rocket_okapi::{mount_endpoints_and_merged_docs, swagger_ui::*};
+
+use crate::members::ldap;
 
 mod archive;
+mod config;
 mod errors;
+mod members;
 mod schema_util;
 
 #[rocket::main]
 async fn main() {
-    match create_server().launch().await {
+    let server_result = create_server();
+    if server_result.is_err() {
+        eprintln!(
+            "failed to start: {}",
+            server_result.err().unwrap().to_string()
+        );
+        return;
+    }
+    match server_result.unwrap().launch().await {
         Ok(()) => eprintln!("shutdown keg!"),
         Err(err) => eprintln!("failed to start: {}", err.to_string()),
     }
 }
 
-fn create_server() -> Rocket<Build> {
+fn create_server() -> Result<Rocket<Build>, &'static str> {
     let custom_route_spec = (vec![], custom_openapi_spec());
     let openapi_settings = openapi_settings();
-    let mut rocket = rocket::build().mount(
-        "/swagger-ui/",
-        make_swagger_ui(&SwaggerUIConfig {
-            url: "/api/v1/openapi.json".to_owned(),
-            ..Default::default()
-        }),
-    );
+    let figment = config::read_config();
+    let config_result = figment.extract();
+    if config_result.is_err() {
+        return Err("failed to read the config");
+    }
+    ldap::open_session(config_result.unwrap());
+    let mut rocket = rocket::custom(figment)
+        .mount(
+            "/swagger-ui/",
+            make_swagger_ui(&SwaggerUIConfig {
+                url: "/api/v1/openapi.json".to_owned(),
+                ..Default::default()
+            }),
+        )
+        .attach(AdHoc::config::<config::Config>());
     mount_endpoints_and_merged_docs! {
         rocket, "/api/v1".to_owned(), openapi_settings,
         "/" => custom_route_spec,
         "/archive" => archive::get_routes_and_docs(&openapi_settings)
-    }
-    ;
-    rocket
+    };
+    Ok(rocket)
 }
 
 fn openapi_settings() -> OpenApiSettings {

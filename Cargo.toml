@@ -9,6 +9,7 @@ license = "GPLv2"
 
 [dependencies]
 rocket = { version = "0.5.0-rc.1", features = ["json"] }
+figment = { version = "0.10.6", features = ["env", "toml", "json"] }
 serde = "1.0.136"
 serde_json = { version = "1.0.79", features = ["preserve_order"] }
 rocket_okapi = { version = "0.8.0-rc.1", features = ["swagger"] }
