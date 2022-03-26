@@ -18,6 +18,7 @@
 #[macro_use]
 extern crate rocket;
 
+use figment::Figment;
 use okapi::openapi3::OpenApi;
 use rocket::fairing::AdHoc;
 use rocket::{Build, Rocket};
@@ -34,29 +35,23 @@ mod schema_util;
 
 #[rocket::main]
 async fn main() {
-    let server_result = create_server();
-    if server_result.is_err() {
-        eprintln!(
-            "failed to start: {}",
-            server_result.err().unwrap().to_string()
-        );
+    let figment = config::read_config();
+    let config_result = figment.extract();
+    if config_result.is_err() {
+        eprintln!("failed to read configuration");
         return;
     }
-    match server_result.unwrap().launch().await {
+    ldap::open_session(config_result.unwrap()).await;
+    let server_result = create_server(figment);
+    match server_result.launch().await {
         Ok(()) => eprintln!("shutdown keg!"),
         Err(err) => eprintln!("failed to start: {}", err.to_string()),
     }
 }
 
-fn create_server() -> Result<Rocket<Build>, &'static str> {
+fn create_server(figment: Figment) -> Rocket<Build> {
     let custom_route_spec = (vec![], custom_openapi_spec());
     let openapi_settings = openapi_settings();
-    let figment = config::read_config();
-    let config_result = figment.extract();
-    if config_result.is_err() {
-        return Err("failed to read the config");
-    }
-    ldap::open_session(config_result.unwrap());
     let mut rocket = rocket::custom(figment)
         .mount(
             "/swagger-ui/",
@@ -71,7 +66,7 @@ fn create_server() -> Result<Rocket<Build>, &'static str> {
         "/" => custom_route_spec,
         "/archive" => archive::get_routes_and_docs(&openapi_settings)
     };
-    Ok(rocket)
+    rocket
 }
 
 fn openapi_settings() -> OpenApiSettings {

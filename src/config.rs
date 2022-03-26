@@ -22,11 +22,32 @@ use figment::{
 use rocket::serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Config {}
+pub struct Config {
+    pub ldap: LdapConfig,
+}
 
 impl Default for Config {
     fn default() -> Self {
-        Config {}
+        Config {
+            ldap: Default::default(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LdapConfig {
+    pub server: String,
+    pub dn: Option<String>,
+    pub password: Option<String>,
+}
+
+impl Default for LdapConfig {
+    fn default() -> Self {
+        Self {
+            server: "ldap://localhost:389".to_string(),
+            dn: None,
+            password: None,
+        }
     }
 }
 
