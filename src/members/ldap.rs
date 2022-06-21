@@ -15,7 +15,7 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-use ldap3::{Ldap, LdapConnAsync};
+use ldap3::{Ldap, LdapConnAsync, LdapError, Scope, SearchEntry};
 
 use crate::config::Config;
 
@@ -47,4 +47,24 @@ pub async fn open_session(config: Config) -> Result<Ldap, ()> {
         }
     }
     Ok(ldap)
+}
+
+pub fn members(mut ldap: Ldap, config: Config) -> Result<(), LdapError> {
+    eprintln!("searching for members in the ldap server");
+    let ldap_config = config.ldap;
+    let search_result = futures::executor::block_on(ldap.search(
+        ldap_config.member_base.as_str(),
+        Scope::Subtree,
+        ldap_config.member_filter.as_str(),
+        vec!["*"],
+    ));
+    if search_result.is_err() {
+        eprintln!("unable to fetch members");
+        return Result::Err(search_result.err().unwrap());
+    }
+    let search = search_result.unwrap();
+    for x in search.0 {
+        println!("{:?}", SearchEntry::construct(x));
+    }
+    Ok(())
 }
