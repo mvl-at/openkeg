@@ -39,6 +39,8 @@ pub struct LdapConfig {
     pub server: String,
     pub dn: Option<String>,
     pub password: Option<String>,
+    pub member_base: String,
+    pub member_filter: String,
 }
 
 impl Default for LdapConfig {
@@ -47,6 +49,8 @@ impl Default for LdapConfig {
             server: "ldap://localhost:389".to_string(),
             dn: None,
             password: None,
+            member_base: "".to_string(),
+            member_filter: "(objectClass=*)".to_string(),
         }
     }
 }
