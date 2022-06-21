@@ -15,13 +15,18 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-use okapi::openapi3::OpenApi;
-use rocket_okapi::openapi_get_routes_spec;
-use rocket_okapi::settings::OpenApiSettings;
+use rocket::serde::json::Json;
+use rocket_okapi::openapi;
 
-pub mod controller;
-pub mod ldap;
+use crate::errors::Result;
 
-pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
-    openapi_get_routes_spec![settings: controller::synchronize]
+/// Synchronize all members.
+///
+/// # Arguments
+///
+/// * `sync` - a bool which indicates if the synchronization should block this call or not
+#[openapi(tag = "Members")]
+#[post("/synchronize?<sync>")]
+pub fn synchronize(sync: bool) -> Result<()> {
+    Ok(Json(()))
 }

@@ -49,7 +49,7 @@ async fn main() {
     }
     let server_result = create_server(figment, ldap_result.unwrap());
     match server_result.launch().await {
-        Ok(()) => eprintln!("shutdown keg!"),
+        Ok(_) => eprintln!("shutdown keg!"),
         Err(err) => eprintln!("failed to start: {}", err.to_string()),
     }
 }
@@ -70,7 +70,8 @@ fn create_server(figment: Figment, ldap: Ldap) -> Rocket<Build> {
     mount_endpoints_and_merged_docs! {
         rocket, "/api/v1".to_owned(), openapi_settings,
         "/" => custom_route_spec,
-        "/archive" => archive::get_routes_and_docs(&openapi_settings)
+        "/archive" => archive::get_routes_and_docs(&openapi_settings),
+        "/members" => members::get_routes_and_docs(&openapi_settings)
     };
     rocket
 }
