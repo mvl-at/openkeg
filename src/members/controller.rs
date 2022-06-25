@@ -16,7 +16,7 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 use crate::config::Config;
-use futures::FutureExt;
+use ldap3::tokio::task;
 use rocket::serde::json::Json;
 use rocket::State;
 use rocket_okapi::openapi;
@@ -32,6 +32,7 @@ use crate::ldap;
 #[openapi(tag = "Members")]
 #[post("/synchronize?<sync>")]
 pub fn synchronize(sync: bool, config: &State<Config>) -> Result<()> {
-    ldap::members(config.inner()).now_or_never();
+    let conf_copy = config.inner().clone();
+    task::spawn(ldap::members(conf_copy));
     Ok(Json(()))
 }

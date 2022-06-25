@@ -21,7 +21,7 @@ use figment::{
 };
 use rocket::serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     pub ldap: LdapConfig,
 }
@@ -34,7 +34,7 @@ impl Default for Config {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LdapConfig {
     pub server: String,
     pub dn: Option<String>,
