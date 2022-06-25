@@ -19,13 +19,11 @@
 extern crate rocket;
 
 use figment::Figment;
-use ldap3::Ldap;
 use okapi::openapi3::OpenApi;
 use rocket::fairing::AdHoc;
 use rocket::{Build, Rocket};
 use rocket_okapi::settings::OpenApiSettings;
 use rocket_okapi::{mount_endpoints_and_merged_docs, swagger_ui::*};
-use std::sync::{Arc, Mutex};
 
 use crate::members::ldap;
 
