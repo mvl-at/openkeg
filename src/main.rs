@@ -25,6 +25,7 @@ use rocket::fairing::AdHoc;
 use rocket::{Build, Rocket};
 use rocket_okapi::settings::OpenApiSettings;
 use rocket_okapi::{mount_endpoints_and_merged_docs, swagger_ui::*};
+use std::sync::{Arc, Mutex};
 
 use crate::members::ldap;
 
@@ -37,24 +38,14 @@ mod schema_util;
 #[rocket::main]
 async fn main() {
     let figment = config::read_config();
-    let config_result = figment.extract();
-    if config_result.is_err() {
-        eprintln!("failed to read configuration");
-        return;
-    }
-    let ldap_result = ldap::open_session(config_result.unwrap()).await;
-    if ldap_result.is_err() {
-        eprintln!("failed to connect to the ldap server");
-        return;
-    }
-    let server_result = create_server(figment, ldap_result.unwrap());
+    let server_result = create_server(figment);
     match server_result.launch().await {
         Ok(_) => eprintln!("shutdown keg!"),
         Err(err) => eprintln!("failed to start: {}", err.to_string()),
     }
 }
 
-fn create_server(figment: Figment, ldap: Ldap) -> Rocket<Build> {
+fn create_server(figment: Figment) -> Rocket<Build> {
     let custom_route_spec = (vec![], custom_openapi_spec());
     let openapi_settings = openapi_settings();
     let mut rocket = rocket::custom(figment)
@@ -65,7 +56,6 @@ fn create_server(figment: Figment, ldap: Ldap) -> Rocket<Build> {
                 ..Default::default()
             }),
         )
-        .manage(ldap)
         .attach(AdHoc::config::<config::Config>());
     mount_endpoints_and_merged_docs! {
         rocket, "/api/v1".to_owned(), openapi_settings,

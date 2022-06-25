@@ -15,10 +15,14 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+use crate::config::Config;
+use futures::FutureExt;
 use rocket::serde::json::Json;
+use rocket::State;
 use rocket_okapi::openapi;
 
 use crate::errors::Result;
+use crate::ldap;
 
 /// Synchronize all members.
 ///
@@ -27,6 +31,7 @@ use crate::errors::Result;
 /// * `sync` - a bool which indicates if the synchronization should block this call or not
 #[openapi(tag = "Members")]
 #[post("/synchronize?<sync>")]
-pub fn synchronize(sync: bool) -> Result<()> {
+pub fn synchronize(sync: bool, config: &State<Config>) -> Result<()> {
+    ldap::members(config.inner()).now_or_never();
     Ok(Json(()))
 }
