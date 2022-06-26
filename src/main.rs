@@ -19,6 +19,7 @@
 extern crate rocket;
 
 use figment::Figment;
+use log::{error, info};
 use okapi::openapi3::OpenApi;
 use rocket::fairing::AdHoc;
 use rocket::{Build, Rocket};
@@ -35,11 +36,12 @@ mod schema_util;
 
 #[rocket::main]
 async fn main() {
+    env_logger::init();
     let figment = config::read_config();
     let server_result = create_server(figment);
     match server_result.launch().await {
-        Ok(_) => eprintln!("shutdown keg!"),
-        Err(err) => eprintln!("failed to start: {}", err.to_string()),
+        Ok(_) => info!("shutdown keg!"),
+        Err(err) => error!("failed to start: {}", err.to_string()),
     }
 }
 

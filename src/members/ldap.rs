@@ -16,16 +16,17 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 use ldap3::{Ldap, LdapConnAsync, LdapError, Scope, SearchEntry};
+use log::{debug, error, info, warn};
 
 use crate::config::Config;
 use crate::ldap;
 
 pub async fn open_session(config: &Config) -> Result<Ldap, ()> {
     let ldap_config = &config.ldap;
-    eprintln!("open session to ldap server: {}", ldap_config.server);
+    info!("bind to ldap server: {}", ldap_config.server);
     let ldap_result = LdapConnAsync::new(&*ldap_config.server).await;
     if ldap_result.is_err() {
-        eprintln!(
+        error!(
             "failed to open ldap session: {:#?}",
             ldap_result.err().unwrap()
         );
@@ -34,10 +35,10 @@ pub async fn open_session(config: &Config) -> Result<Ldap, ()> {
     let (conn, mut ldap) = ldap_result.unwrap();
     ldap3::drive!(conn);
     if ldap_config.dn.is_none() {
-        eprintln!("using ldap without user");
+        warn!("using ldap without user");
     } else {
         let user = ldap_config.dn.as_ref().unwrap();
-        eprintln!("bind ldap user with dn '{}'", user);
+        error!("bind ldap user with dn '{}'", user);
         let result = ldap
             .simple_bind(
                 &*user,
@@ -45,19 +46,19 @@ pub async fn open_session(config: &Config) -> Result<Ldap, ()> {
             )
             .await;
         if result.is_err() {
-            eprintln!("failed to bind user: {:#?}", result.err().unwrap())
+            error!("failed to bind user: {:#?}", result.err().unwrap())
         } else {
-            eprintln!("bind result: {}", result.unwrap());
+            debug!("bind result: {}", result.unwrap());
         }
     }
     Ok(ldap)
 }
 
 pub async fn members(config: Config) -> Result<(), LdapError> {
-    eprintln!("searching for members in the ldap server");
+    info!("searching for members in the ldap server");
     let ldap_result = ldap::open_session(&config).await;
     if ldap_result.is_err() {
-        eprintln!("failed to connect to the ldap server");
+        error!("failed to connect to the ldap server");
         return Result::Err(LdapError::EndOfStream);
     }
     let mut ldap = ldap_result.unwrap();
@@ -71,14 +72,14 @@ pub async fn members(config: Config) -> Result<(), LdapError> {
         )
         .await?
         .success();
-    eprintln!("received a search result");
+    debug!("received a search result");
     if search_result.is_err() {
         let err = search_result.unwrap_err();
-        eprintln!("retrieved ldap error: {:?}", err);
+        error!("retrieved ldap error: {:?}", err);
         return Err(err);
     }
     let search = search_result.unwrap();
-    eprintln!("looping through {} results", search.0.len());
+    debug!("looping through {} results", search.0.len());
     for x in search.0 {
         println!("{:?}", SearchEntry::construct(x));
     }
