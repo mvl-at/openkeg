@@ -69,11 +69,13 @@ pub async fn members(config: Config) -> Result<(), LdapError> {
             ldap_config.member_filter.as_str(),
             vec!["*"],
         )
-        .await;
+        .await?
+        .success();
     eprintln!("received a search result");
     if search_result.is_err() {
-        eprintln!("unable to fetch members");
-        return Result::Err(search_result.err().unwrap());
+        let err = search_result.unwrap_err();
+        eprintln!("retrieved ldap error: {:?}", err);
+        return Err(err);
     }
     let search = search_result.unwrap();
     eprintln!("looping through {} results", search.0.len());

@@ -17,3 +17,6 @@ schemars = "0.8.10"
 okapi = { version = "0.7.0-rc.1", features = ["impl_json_schema", "preserve_order"] }
 ldap3 = "0.10.5"
 futures = "0.3.21"
+
+[profile.release]
+opt-level = "s"
