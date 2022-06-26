@@ -33,6 +33,10 @@ use crate::ldap;
 #[post("/synchronize?<sync>")]
 pub fn synchronize(sync: bool, config: &State<Config>) -> Result<()> {
     let conf_copy = config.inner().clone();
-    task::spawn(ldap::members(conf_copy));
+    let fetch_task = async {
+        let members = ldap::members(conf_copy).await.unwrap();
+        debug!("members: {:?}", members);
+    };
+    task::spawn(fetch_task);
     Ok(Json(()))
 }

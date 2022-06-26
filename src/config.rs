@@ -41,6 +41,7 @@ pub struct LdapConfig {
     pub password: Option<String>,
     pub member_base: String,
     pub member_filter: String,
+    pub member_mapping: MemberMapping,
 }
 
 impl Default for LdapConfig {
@@ -51,6 +52,48 @@ impl Default for LdapConfig {
             password: None,
             member_base: "".to_string(),
             member_filter: "(objectClass=*)".to_string(),
+            member_mapping: MemberMapping::default(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MemberMapping {
+    pub username: String,
+    pub full_username: String,
+    pub first_name: String,
+    pub last_name: String,
+    pub common_name: String,
+    pub whatsapp: String,
+    pub joining: String,
+    pub listed: String,
+    pub official: String,
+    pub gender: String,
+    pub active: String,
+    pub mobile: String,
+    pub birthday: String,
+    pub mail: String,
+    pub photo: String,
+}
+
+impl Default for MemberMapping {
+    fn default() -> Self {
+        MemberMapping {
+            username: "uid".to_string(),
+            full_username: "dn".to_string(),
+            first_name: "givenName".to_string(),
+            last_name: "sn".to_string(),
+            common_name: "cn".to_string(),
+            whatsapp: "wa".to_string(),
+            joining: "joining".to_string(),
+            listed: "listed".to_string(),
+            official: "official".to_string(),
+            gender: "gender".to_string(),
+            active: "active".to_string(),
+            mobile: "mobile".to_string(),
+            birthday: "birthday".to_string(),
+            mail: "mail".to_string(),
+            photo: "jpegPhoto".to_string(),
         }
     }
 }

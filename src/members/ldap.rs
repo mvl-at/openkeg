@@ -19,6 +19,7 @@ use ldap3::{Ldap, LdapConnAsync, LdapError, Scope, SearchEntry};
 
 use crate::config::Config;
 use crate::ldap;
+use crate::members::model::Member;
 
 pub async fn open_session(config: &Config) -> Result<Ldap, ()> {
     let ldap_config = &config.ldap;
@@ -53,7 +54,7 @@ pub async fn open_session(config: &Config) -> Result<Ldap, ()> {
     Ok(ldap)
 }
 
-pub async fn members(config: Config) -> Result<(), LdapError> {
+pub async fn members(config: Config) -> Result<Vec<Member>, LdapError> {
     info!("searching for members in the ldap server");
     let ldap_result = ldap::open_session(&config).await;
     if ldap_result.is_err() {
@@ -79,9 +80,14 @@ pub async fn members(config: Config) -> Result<(), LdapError> {
     }
     let search = search_result.unwrap();
     debug!("looping through {} results", search.0.len());
-    for x in search.0 {
-        println!("{:?}", SearchEntry::construct(x));
-    }
+    let members = search
+        .0
+        .iter()
+        .map(|result_entry| {
+            let entry = SearchEntry::construct(result_entry.to_owned());
+            Member::from_search_entry(&entry, &config)
+        })
+        .collect();
     ldap.unbind().await?;
-    Ok(())
+    Ok(members)
 }
