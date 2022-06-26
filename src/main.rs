@@ -19,7 +19,6 @@
 extern crate rocket;
 
 use figment::Figment;
-use log::{error, info};
 use okapi::openapi3::OpenApi;
 use rocket::fairing::AdHoc;
 use rocket::{Build, Rocket};
@@ -37,6 +36,10 @@ mod schema_util;
 #[rocket::main]
 async fn main() {
     env_logger::init();
+    info!(
+        "Welcome to Keg {} - the backend of the Musikverein Leopoldsdorf!",
+        env!("CARGO_PKG_VERSION")
+    );
     let figment = config::read_config();
     let server_result = create_server(figment);
     match server_result.launch().await {

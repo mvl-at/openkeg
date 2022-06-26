@@ -16,7 +16,6 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 use ldap3::{Ldap, LdapConnAsync, LdapError, Scope, SearchEntry};
-use log::{debug, error, info, warn};
 
 use crate::config::Config;
 use crate::ldap;
