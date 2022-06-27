@@ -18,7 +18,7 @@
 #[macro_use]
 extern crate rocket;
 
-use crate::ldap::{AllExecutives, AllMembers, AllMembersByRegister, AllRegisters};
+use crate::ldap::{AllMembers, Executives, HonoraryMembers, MembersByRegister, Registers, Sutlers};
 use figment::Figment;
 use okapi::openapi3::OpenApi;
 use rocket::fairing::AdHoc;
@@ -43,9 +43,11 @@ async fn main() {
     let figment = config::read_config();
     let server_result = create_server(figment)
         .manage(AllMembers::new())
-        .manage(AllRegisters::new())
-        .manage(AllExecutives::new())
-        .manage(AllMembersByRegister::new());
+        .manage(Registers::new())
+        .manage(Executives::new())
+        .manage(MembersByRegister::new())
+        .manage(Sutlers::new())
+        .manage(HonoraryMembers::new());
     match server_result.launch().await {
         Ok(_) => info!("shutdown keg!"),
         Err(err) => error!("failed to start: {}", err.to_string()),

@@ -25,12 +25,16 @@ use crate::members::model::{Group, Member};
 /// All members with no further order
 pub type AllMembers = HashSet<Member>;
 /// All registers with no further order
-pub type AllRegisters = HashSet<Group>;
+pub type Registers = HashSet<Group>;
 /// All executive roles with no further order
-pub type AllExecutives = HashSet<Group>;
+pub type Executives = HashSet<Group>;
 /// All members grouped by their register.
 /// Registers are ordered by their name and members are ordered by their joining, lastname and firstname
-pub type AllMembersByRegister = LinkedList<RegisterEntry>;
+pub type MembersByRegister = LinkedList<RegisterEntry>;
+/// All members which are sutlers
+pub type Sutlers = LinkedList<Member>;
+/// All honorary members
+pub type HonoraryMembers = LinkedList<Member>;
 
 /// An entry which holds a register and all corresponding members
 pub struct RegisterEntry {
