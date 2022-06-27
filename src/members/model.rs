@@ -83,7 +83,14 @@ impl LdapDeserializable<Member> for Member {
             mobile: string_or_empty(&mapping.username, attrs),
             birthday: string_or_empty(&mapping.birthday, attrs)[0].to_string(),
             mail: string_or_empty(&mapping.mail, attrs),
-            photo: vec![],
+            photo: entry
+                .bin_attrs
+                .get(&mapping.photo)
+                .unwrap_or(&vec![])
+                .iter()
+                .next()
+                .unwrap_or(&vec![])
+                .to_owned(),
             address: Address::from_search_entry(entry, config),
         }
     }
