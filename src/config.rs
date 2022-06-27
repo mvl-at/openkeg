@@ -42,6 +42,7 @@ pub struct LdapConfig {
     pub member_base: String,
     pub member_filter: String,
     pub member_mapping: MemberMapping,
+    pub address_mapping: AddressMapping,
 }
 
 impl Default for LdapConfig {
@@ -53,6 +54,7 @@ impl Default for LdapConfig {
             member_base: "".to_string(),
             member_filter: "(objectClass=*)".to_string(),
             member_mapping: MemberMapping::default(),
+            address_mapping: AddressMapping::default(),
         }
     }
 }
@@ -94,6 +96,29 @@ impl Default for MemberMapping {
             birthday: "birthday".to_string(),
             mail: "mail".to_string(),
             photo: "jpegPhoto".to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct AddressMapping {
+    pub street: String,
+    pub house_number: String,
+    pub postal_code: String,
+    pub city: String,
+    pub state: String,
+    pub country_code: String,
+}
+
+impl Default for AddressMapping {
+    fn default() -> Self {
+        Self {
+            street: "street".to_string(),
+            house_number: "houseIdentifier".to_string(),
+            postal_code: "postalCode".to_string(),
+            city: "l".to_string(),
+            state: "st".to_string(),
+            country_code: "c".to_string(),
         }
     }
 }

@@ -18,6 +18,7 @@
 use crate::config::Config;
 use ldap3::SearchEntry;
 use std::collections::HashMap;
+use std::hash::Hash;
 
 #[derive(Debug)]
 pub struct Member {
@@ -36,6 +37,17 @@ pub struct Member {
     pub birthday: String,
     pub mail: Vec<String>,
     pub photo: Vec<u8>,
+    pub address: Option<Address>,
+}
+
+#[derive(Debug)]
+pub struct Address {
+    pub street: String,
+    pub house_number: String,
+    pub postal_code: String,
+    pub city: String,
+    pub state: String,
+    pub country_code: String,
 }
 
 impl Member {
@@ -63,7 +75,36 @@ impl Member {
             birthday: string_or_empty(&mapping.birthday, attrs)[0].to_string(),
             mail: string_or_empty(&mapping.mail, attrs),
             photo: vec![],
+            address: Address::from_search_entry(entry, config),
         }
+    }
+}
+
+impl Address {
+    pub fn from_search_entry(entry: &SearchEntry, config: &Config) -> Option<Address> {
+        let attrs = &entry.attrs;
+        let mapping = &config.ldap.address_mapping;
+        if !contains_all(
+            attrs,
+            &vec![
+                mapping.country_code.to_string(),
+                mapping.postal_code.to_string(),
+                mapping.city.to_string(),
+                mapping.house_number.to_string(),
+                mapping.state.to_string(),
+                mapping.street.to_string(),
+            ],
+        ) {
+            return None;
+        }
+        Some(Address {
+            street: string_or_empty(&mapping.street, attrs)[0].to_string(),
+            house_number: string_or_empty(&mapping.house_number, attrs)[0].to_string(),
+            postal_code: string_or_empty(&mapping.postal_code, attrs)[0].to_string(),
+            city: string_or_empty(&mapping.city, attrs)[0].to_string(),
+            state: string_or_empty(&mapping.state, attrs)[0].to_string(),
+            country_code: string_or_empty(&mapping.country_code, attrs)[0].to_string(),
+        })
     }
 }
 
@@ -76,4 +117,14 @@ fn string_or_empty(attribute: &String, attrs: &HashMap<String, Vec<String>>) -> 
 
 fn bool_or_false(attribute: &String, attrs: &HashMap<String, Vec<String>>) -> bool {
     attrs.get(attribute).unwrap_or(&vec!["".to_string()])[0].eq_ignore_ascii_case("true")
+}
+
+fn contains_all<K, V>(map: &HashMap<K, V>, keys: &Vec<K>) -> bool
+where
+    K: Hash + Eq,
+{
+    keys.iter()
+        .map(|k| map.contains_key(k))
+        .reduce(|k, l| k && l)
+        .unwrap_or(false)
 }
