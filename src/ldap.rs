@@ -19,8 +19,23 @@ use ldap3::{Ldap, LdapConnAsync, LdapError, Scope, SearchEntry};
 
 use crate::config::Config;
 use crate::ldap;
-use crate::members::model::Member;
 
+/// A trait which ensures the deserialization capability of a struct.
+pub trait LdapDeserializable<T> {
+    /// Construct the struct out of a search entry
+    ///
+    /// # Arguments
+    ///
+    /// * `entry` : the entry which contains the data for constructing the struct
+    /// * `config` : the configuration of the application - might be used for correct struct mappings
+    fn from_search_entry(entry: &SearchEntry, config: &Config) -> T;
+}
+
+/// Open the ldap session
+///
+/// # Arguments
+///
+/// * `config` : the application configuration used for retrieving the ldap server credentials
 pub async fn open_session(config: &Config) -> Result<Ldap, ()> {
     let ldap_config = &config.ldap;
     info!("bind to ldap server: {}", ldap_config.server);
@@ -54,22 +69,34 @@ pub async fn open_session(config: &Config) -> Result<Ldap, ()> {
     Ok(ldap)
 }
 
-pub async fn members(config: Config) -> Result<Vec<Member>, LdapError> {
-    info!("searching for members in the ldap server");
-    let ldap_result = ldap::open_session(&config).await;
+/// Search for entries in the ldap directory and construct the entities.
+///
+/// # Arguments
+///
+/// * `base` : the base dn to search for
+/// * `filter` : the ldap filter used for the search
+/// * `config` : the application configuration
+///
+pub async fn search_entries<R, E>(
+    base: &String,
+    filter: &String,
+    config: &Config,
+) -> Result<Vec<R>, LdapError>
+where
+    E: LdapDeserializable<R>,
+{
+    info!(
+        "searching for in the ldap server at '{}' with filter '{}'",
+        base, filter
+    );
+    let ldap_result = ldap::open_session(config).await;
     if ldap_result.is_err() {
         error!("failed to connect to the ldap server");
         return Result::Err(LdapError::EndOfStream);
     }
     let mut ldap = ldap_result.unwrap();
-    let ldap_config = &config.ldap;
     let search_result = ldap
-        .search(
-            ldap_config.member_base.as_str(),
-            Scope::Subtree,
-            ldap_config.member_filter.as_str(),
-            vec!["*"],
-        )
+        .search(base, Scope::Subtree, filter, vec!["*"])
         .await?
         .success();
     debug!("received a search result");
@@ -80,14 +107,14 @@ pub async fn members(config: Config) -> Result<Vec<Member>, LdapError> {
     }
     let search = search_result.unwrap();
     debug!("looping through {} results", search.0.len());
-    let members = search
+    let entries = search
         .0
         .iter()
         .map(|result_entry| {
             let entry = SearchEntry::construct(result_entry.to_owned());
-            Member::from_search_entry(&entry, &config)
+            E::from_search_entry(&entry, config)
         })
         .collect();
     ldap.unbind().await?;
-    Ok(members)
+    Ok(entries)
 }

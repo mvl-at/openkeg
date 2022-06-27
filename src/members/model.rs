@@ -16,20 +16,10 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 use crate::config::Config;
+use crate::ldap::LdapDeserializable;
 use ldap3::SearchEntry;
 use std::collections::HashMap;
 use std::hash::Hash;
-
-/// A trait which ensures the deserialization capability of a struct.
-pub trait LdapDeserializable<T> {
-    /// Construct the struct out of a search entry
-    ///
-    /// # Arguments
-    ///
-    /// * `entry` : the entry which contains the data for constructing the struct
-    /// * `config` : the configuration of the application - might be used for correct struct mappings
-    fn from_search_entry(entry: &SearchEntry, config: &Config) -> T;
-}
 
 #[derive(Debug)]
 pub struct Member {

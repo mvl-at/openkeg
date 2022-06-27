@@ -25,11 +25,10 @@ use rocket::{Build, Rocket};
 use rocket_okapi::settings::OpenApiSettings;
 use rocket_okapi::{mount_endpoints_and_merged_docs, swagger_ui::*};
 
-use crate::members::ldap;
-
 mod archive;
 mod config;
 mod errors;
+mod ldap;
 mod members;
 mod schema_util;
 

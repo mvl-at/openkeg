@@ -23,6 +23,7 @@ use rocket_okapi::openapi;
 
 use crate::errors::Result;
 use crate::ldap;
+use crate::members::model::Member;
 
 /// Synchronize all members.
 ///
@@ -33,8 +34,14 @@ use crate::ldap;
 #[post("/synchronize?<sync>")]
 pub fn synchronize(sync: bool, config: &State<Config>) -> Result<()> {
     let conf_copy = config.inner().clone();
-    let fetch_task = async {
-        let members = ldap::members(conf_copy).await.unwrap();
+    let fetch_task = async move {
+        let members = ldap::search_entries::<Member, Member>(
+            &conf_copy.ldap.member_base,
+            &conf_copy.ldap.member_filter,
+            &conf_copy,
+        )
+        .await
+        .unwrap();
         debug!("members: {:?}", members);
     };
     task::spawn(fetch_task);
