@@ -15,10 +15,12 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-use ldap3::tokio::sync::{Mutex, MutexGuard};
 use ldap3::{Ldap, LdapConnAsync, LdapError, Scope, SearchEntry};
+use rocket::tokio;
+use rocket::tokio::sync::Mutex;
 use std::collections::{HashSet, LinkedList};
 use std::sync::Arc;
+use std::time::Duration;
 
 use crate::config::{Config, LdapConfig};
 use crate::ldap;
@@ -199,6 +201,7 @@ pub async fn synchronize_members_and_groups(
     debug!("done with copying data, begin with sorting");
 
     construct_members_by_register(&mut member_state_lock, members_vector, registers_vector);
+    drop(member_state_lock);
     info!("done with user synchronization")
 }
 
@@ -363,4 +366,17 @@ where
         typ
     );
     Some(ldap_entries)
+}
+
+pub async fn member_synchronization_task(
+    conf: &Config,
+    member_state: &mut Arc<Mutex<MemberState>>,
+) {
+    let mut interval =
+        tokio::time::interval(Duration::from_secs(conf.ldap.synchronization_interval));
+    loop {
+        info!("running scheduled user synchronization");
+        synchronize_members_and_groups(conf, member_state).await;
+        interval.tick().await;
+    }
 }

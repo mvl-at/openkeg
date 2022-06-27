@@ -18,10 +18,12 @@
 #[macro_use]
 extern crate rocket;
 
+use crate::config::Config;
 use crate::ldap::{
     AllMembers, Executives, HonoraryMembers, MemberState, MembersByRegister, Registers, Sutlers,
 };
 use figment::Figment;
+use ldap3::tokio::task;
 use okapi::openapi3::OpenApi;
 use rocket::fairing::AdHoc;
 use rocket::tokio::sync::Mutex;
@@ -45,14 +47,16 @@ async fn main() {
         env!("CARGO_PKG_VERSION")
     );
     let figment = config::read_config();
-    let server_result = create_server(figment).manage(Arc::new(Mutex::new(MemberState {
+    let member_state = Arc::new(Mutex::new(MemberState {
         all_members: AllMembers::new(),
         registers: Registers::new(),
         executives: Executives::new(),
         members_by_register: MembersByRegister::new(),
         sutlers: Sutlers::new(),
         honorary_members: HonoraryMembers::new(),
-    })));
+    }));
+    let server_result = create_server(figment).manage(member_state);
+    register_user_sync_task(&server_result);
     match server_result.launch().await {
         Ok(_) => info!("shutdown keg!"),
         Err(err) => error!("failed to start: {}", err.to_string()),
@@ -78,6 +82,19 @@ fn create_server(figment: Figment) -> Rocket<Build> {
         "/members" => members::get_routes_and_docs(&openapi_settings)
     };
     rocket
+}
+
+fn register_user_sync_task(server: &Rocket<Build>) {
+    let config: Config = server.figment().extract().expect("config");
+    let member_state_option = server.state::<Arc<Mutex<MemberState>>>();
+    if member_state_option.is_none() {
+        warn!("unable to retrieve member state, scheduled user synchronization will not work");
+        return;
+    }
+    let mut member_state_clone = member_state_option.unwrap().clone();
+    task::spawn(async move {
+        ldap::member_synchronization_task(&config, &mut member_state_clone).await;
+    });
 }
 
 fn openapi_settings() -> OpenApiSettings {
