@@ -18,10 +18,11 @@
 use crate::config::Config;
 use crate::ldap::LdapDeserializable;
 use ldap3::SearchEntry;
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::hash::Hash;
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Member {
     pub username: String,
     pub full_username: String,
@@ -41,7 +42,7 @@ pub struct Member {
     pub address: Option<Address>,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Address {
     pub street: String,
     pub house_number: String,
@@ -51,12 +52,38 @@ pub struct Address {
     pub country_code: String,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Group {
     pub name: String,
     pub name_plural: String,
     pub description: String,
     pub members: Vec<String>,
+}
+
+impl PartialOrd<Self> for Member {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Member {
+    fn cmp(&self, other: &Self) -> Ordering {
+        if self.joining < other.joining {
+            return Ordering::Less;
+        }
+        if self.joining > other.joining {
+            return Ordering::Greater;
+        }
+        let lastname = self.last_name.cmp(&other.last_name);
+        if lastname != Ordering::Equal {
+            return lastname;
+        }
+        let firstname = self.first_name.cmp(&other.first_name);
+        if firstname != Ordering::Equal {
+            return firstname;
+        }
+        Ordering::Equal
+    }
 }
 
 impl LdapDeserializable<Member> for Member {
@@ -137,6 +164,18 @@ impl LdapDeserializable<Group> for Group {
                 .unwrap_or(&vec![])
                 .clone(),
         }
+    }
+}
+
+impl PartialOrd<Self> for Group {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Group {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.name.cmp(&other.name)
     }
 }
 
