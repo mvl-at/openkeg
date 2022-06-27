@@ -15,10 +15,30 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-use ldap3::{Ldap, LdapConnAsync, LdapError, LdapResult, Scope, SearchEntry};
+use ldap3::{Ldap, LdapConnAsync, LdapError, Scope, SearchEntry};
+use std::collections::{HashSet, LinkedList};
 
 use crate::config::Config;
 use crate::ldap;
+use crate::members::model::{Group, Member};
+
+/// All members with no further order
+pub type AllMembers = HashSet<Member>;
+/// All registers with no further order
+pub type AllRegisters = HashSet<Group>;
+/// All executive roles with no further order
+pub type AllExecutives = HashSet<Group>;
+/// All members grouped by their register.
+/// Registers are ordered by their name and members are ordered by their joining, lastname and firstname
+pub type AllMembersByRegister = LinkedList<RegisterEntry>;
+
+/// An entry which holds a register and all corresponding members
+pub struct RegisterEntry {
+    /// The register of this entry
+    pub register: Group,
+    /// The members of this entry
+    pub members: LinkedList<Member>,
+}
 
 /// A trait which ensures the deserialization capability of a struct.
 pub trait LdapDeserializable<T> {

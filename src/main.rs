@@ -18,6 +18,7 @@
 #[macro_use]
 extern crate rocket;
 
+use crate::ldap::{AllExecutives, AllMembers, AllMembersByRegister, AllRegisters};
 use figment::Figment;
 use okapi::openapi3::OpenApi;
 use rocket::fairing::AdHoc;
@@ -40,7 +41,11 @@ async fn main() {
         env!("CARGO_PKG_VERSION")
     );
     let figment = config::read_config();
-    let server_result = create_server(figment);
+    let server_result = create_server(figment)
+        .manage(AllMembers::new())
+        .manage(AllRegisters::new())
+        .manage(AllExecutives::new())
+        .manage(AllMembersByRegister::new());
     match server_result.launch().await {
         Ok(_) => info!("shutdown keg!"),
         Err(err) => error!("failed to start: {}", err.to_string()),
