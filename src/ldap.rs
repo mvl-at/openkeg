@@ -15,7 +15,7 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-use ldap3::{Ldap, LdapConnAsync, LdapError, Scope, SearchEntry};
+use ldap3::{Ldap, LdapConnAsync, LdapError, LdapResult, Scope, SearchEntry};
 
 use crate::config::Config;
 use crate::ldap;
@@ -53,7 +53,7 @@ pub async fn open_session(config: &Config) -> Result<Ldap, ()> {
         warn!("using ldap without user");
     } else {
         let user = ldap_config.dn.as_ref().unwrap();
-        error!("bind ldap user with dn '{}'", user);
+        info!("bind ldap user with dn '{}'", user);
         let result = ldap
             .simple_bind(
                 &*user,
@@ -63,7 +63,12 @@ pub async fn open_session(config: &Config) -> Result<Ldap, ()> {
         if result.is_err() {
             error!("failed to bind user: {:#?}", result.err().unwrap())
         } else {
-            debug!("bind result: {}", result.unwrap());
+            let res = result.as_ref().unwrap();
+            let error_option = res.clone().non_error().err();
+            if error_option.is_some() {
+                let error = error_option.unwrap();
+                error!("failed to bind({}): {} ({:?})", res.rc, res.text, error);
+            }
         }
     }
     Ok(ldap)
