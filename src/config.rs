@@ -41,8 +41,11 @@ pub struct LdapConfig {
     pub password: Option<String>,
     pub member_base: String,
     pub member_filter: String,
+    pub register_base: String,
+    pub register_filter: String,
     pub member_mapping: MemberMapping,
     pub address_mapping: AddressMapping,
+    pub group_mapping: GroupMapping,
 }
 
 impl Default for LdapConfig {
@@ -53,8 +56,11 @@ impl Default for LdapConfig {
             password: None,
             member_base: "".to_string(),
             member_filter: "(objectClass=*)".to_string(),
+            register_base: "".to_string(),
+            register_filter: "(objectClass=*)".to_string(),
             member_mapping: MemberMapping::default(),
             address_mapping: AddressMapping::default(),
+            group_mapping: GroupMapping::default(),
         }
     }
 }
@@ -119,6 +125,25 @@ impl Default for AddressMapping {
             city: "l".to_string(),
             state: "st".to_string(),
             country_code: "c".to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GroupMapping {
+    pub name: String,
+    pub name_plural: String,
+    pub description: String,
+    pub members: String,
+}
+
+impl Default for GroupMapping {
+    fn default() -> Self {
+        Self {
+            name: "cn".to_string(),
+            name_plural: "cns".to_string(),
+            description: "description".to_string(),
+            members: "member".to_string(),
         }
     }
 }
