@@ -18,14 +18,14 @@
 use ldap3::{Ldap, LdapConnAsync, LdapError, Scope, SearchEntry};
 use std::collections::{HashSet, LinkedList};
 
-use crate::config::Config;
+use crate::config::{Config, LdapConfig};
 use crate::ldap;
 use crate::members::model::{Group, Member};
 
 /// All members with no further order
 pub type AllMembers = HashSet<Member>;
 /// All registers with no further order
-pub type Registers = HashSet<Group>;
+pub type Registers = LinkedList<Group>;
 /// All executive roles with no further order
 pub type Executives = HashSet<Group>;
 /// All members grouped by their register.
@@ -36,6 +36,7 @@ pub type Sutlers = LinkedList<Member>;
 /// All honorary members
 pub type HonoraryMembers = LinkedList<Member>;
 
+#[derive(Clone)]
 /// An entry which holds a register and all corresponding members
 pub struct RegisterEntry {
     /// The register of this entry
@@ -146,4 +147,216 @@ where
         .collect();
     ldap.unbind().await?;
     Ok(entries)
+}
+
+/// Synchronize all members and groups with the directory server.
+/// This includes transformations into the desired data structures which also includes sorting.
+/// Note that this modifies the provided structures but they only will be modified on success.
+/// If one of the fetching operations from the directory server fails, nothing will be modified in order to avoid inconsistency.
+/// # Arguments
+///
+/// * `conf` : the application configuration
+/// * `members` : the structure which is desired to hold all members
+/// * `registers` : the structure which is desired to hold all registers
+/// * `executives` : the structure which is desired to hold all executive roles
+/// * `members_by_register` : the structure which is desired to hold all the sorted members and registers
+/// * `sutlers` : the structure which is desired to hold all sutlers
+/// * `honorary_members` : the structure which is desired to hold all honorary members
+pub async fn synchronize_members_and_groups(
+    conf: &Config,
+    members: &mut AllMembers,
+    registers: &mut Registers,
+    executives: &mut Executives,
+    members_by_register: &mut MembersByRegister,
+    sutlers: &mut Sutlers,
+    honorary_members: &mut HonoraryMembers,
+) {
+    let ldap_conf = &conf.ldap;
+    let optionals = fetch_results(conf, &ldap_conf).await;
+    if optionals.is_none() {
+        return;
+    }
+    let (
+        mut members_vector,
+        mut sutlers_vector,
+        mut honorary_option,
+        mut registers_vector,
+        executives_vector,
+    ) = optionals.unwrap();
+
+    info!("done fetching, begin with transformation");
+    fill_primitive_collections(
+        members,
+        registers,
+        executives,
+        sutlers,
+        honorary_members,
+        &mut members_vector,
+        &mut sutlers_vector,
+        &mut honorary_option,
+        &mut registers_vector,
+        executives_vector,
+    );
+    debug!("done with copying data, begin with sorting");
+
+    construct_members_by_register(members_by_register, members_vector, registers_vector);
+    info!("done with user synchronization")
+}
+
+fn construct_members_by_register(
+    members_by_register: &mut MembersByRegister,
+    member_result: Vec<Member>,
+    registers_result: Vec<Group>,
+) {
+    members_by_register.clear();
+    members_by_register.extend(registers_result.iter().map(|register| {
+        let register_members = member_result
+            .iter()
+            .filter(|m| register.members.contains(&m.full_username))
+            .cloned()
+            .collect();
+        RegisterEntry {
+            register: register.clone(),
+            members: register_members,
+        }
+    }));
+}
+
+/// Helper function to sort and assign primitive collections.
+fn fill_primitive_collections(
+    members: &mut AllMembers,
+    registers: &mut Registers,
+    executives: &mut Executives,
+    sutlers: &mut Sutlers,
+    honorary_members: &mut HonoraryMembers,
+    member_vector: &mut Vec<Member>,
+    sutler_vector: &mut Vec<Member>,
+    honorary_vector: &mut Vec<Member>,
+    registers_vector: &mut Vec<Group>,
+    executives_vector: Vec<Group>,
+) {
+    let executives_result = executives_vector;
+    members.clear();
+    member_vector.sort();
+    members.extend(member_vector.iter().cloned());
+    sutlers.clear();
+    sutler_vector.sort();
+    sutlers.extend(sutler_vector.iter().cloned());
+    honorary_members.clear();
+    honorary_vector.sort();
+    honorary_members.extend(honorary_vector.iter().cloned());
+    registers.clear();
+    registers_vector.sort();
+    registers.extend(registers_vector.iter().cloned());
+    executives.clear();
+    executives.extend(executives_result);
+}
+
+/// Helper function to fetch entries and return them all or none is at least one was not successful.
+async fn fetch_results(
+    conf: &Config,
+    ldap_conf: &LdapConfig,
+) -> Option<(
+    Vec<Member>,
+    Vec<Member>,
+    Vec<Member>,
+    Vec<Group>,
+    Vec<Group>,
+)> {
+    let stop_str = "unable to fetch partial data from the directory server, stop synchronizing";
+    let member_option = fetch_entries::<Member, Member>(
+        "members",
+        &ldap_conf.member_base,
+        &ldap_conf.member_filter,
+        conf,
+    )
+    .await;
+    if member_option.is_none() {
+        warn!("{}", stop_str);
+        return None;
+    }
+    let sutler_option = fetch_entries::<Member, Member>(
+        "sutlers",
+        &ldap_conf.sutler_base,
+        &ldap_conf.sutler_filter,
+        conf,
+    )
+    .await;
+    if sutler_option.is_none() {
+        warn!("{}", stop_str);
+        return None;
+    }
+    let honorary_option = fetch_entries::<Member, Member>(
+        "honorary members",
+        &ldap_conf.honorary_base,
+        &ldap_conf.honorary_filter,
+        conf,
+    )
+    .await;
+    if honorary_option.is_none() {
+        warn!("{}", stop_str);
+        return None;
+    }
+
+    let registers_option = fetch_entries::<Group, Group>(
+        "registers",
+        &ldap_conf.register_base,
+        &ldap_conf.register_filter,
+        conf,
+    )
+    .await;
+    if registers_option.is_none() {
+        warn!("{}", stop_str);
+        return None;
+    }
+
+    let executives_option = fetch_entries::<Group, Group>(
+        "executive roles",
+        &ldap_conf.executives_base,
+        &ldap_conf.executives_filter,
+        conf,
+    )
+    .await;
+    if executives_option.is_none() {
+        warn!("{}", stop_str);
+        return None;
+    }
+    Some((
+        member_option.unwrap(),
+        sutler_option.unwrap(),
+        honorary_option.unwrap(),
+        registers_option.unwrap(),
+        executives_option.unwrap(),
+    ))
+}
+
+/// Fetch all entries of the given type and print messages.
+///
+/// # Arguments
+///
+/// * `typ` : the type of the entries which is used for messages
+/// * `base` : the base dn to search in
+/// * `filter` : the ldap filter to use during search
+/// * `conf` : the application configuration
+async fn fetch_entries<R, E>(
+    typ: &str,
+    base: &String,
+    filter: &String,
+    conf: &Config,
+) -> Option<Vec<R>>
+where
+    E: LdapDeserializable<R>,
+{
+    let ldap_result = search_entries::<R, E>(base, filter, conf).await;
+    if ldap_result.is_err() {
+        warn!("unable to fetch {} from the directory server", typ);
+        return None;
+    }
+    let ldap_entries = ldap_result.unwrap();
+    info!(
+        "successfully received {} {} entries",
+        ldap_entries.len(),
+        typ
+    );
+    Some(ldap_entries)
 }
