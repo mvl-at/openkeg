@@ -21,7 +21,7 @@ use ldap3::SearchEntry;
 use std::collections::HashMap;
 use std::hash::Hash;
 
-#[derive(Debug)]
+#[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Member {
     pub username: String,
     pub full_username: String,
@@ -41,7 +41,7 @@ pub struct Member {
     pub address: Option<Address>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Address {
     pub street: String,
     pub house_number: String,
@@ -51,7 +51,7 @@ pub struct Address {
     pub country_code: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Group {
     pub name: String,
     pub name_plural: String,
