@@ -15,8 +15,10 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+use ldap3::tokio::sync::{Mutex, MutexGuard};
 use ldap3::{Ldap, LdapConnAsync, LdapError, Scope, SearchEntry};
 use std::collections::{HashSet, LinkedList};
+use std::sync::Arc;
 
 use crate::config::{Config, LdapConfig};
 use crate::ldap;
@@ -35,6 +37,16 @@ pub type MembersByRegister = LinkedList<RegisterEntry>;
 pub type Sutlers = LinkedList<Member>;
 /// All honorary members
 pub type HonoraryMembers = LinkedList<Member>;
+
+/// The state of all member data
+pub struct MemberState {
+    pub all_members: AllMembers,
+    pub registers: Registers,
+    pub executives: Executives,
+    pub members_by_register: MembersByRegister,
+    pub sutlers: Sutlers,
+    pub honorary_members: HonoraryMembers,
+}
 
 #[derive(Clone)]
 /// An entry which holds a register and all corresponding members
@@ -156,20 +168,10 @@ where
 /// # Arguments
 ///
 /// * `conf` : the application configuration
-/// * `members` : the structure which is desired to hold all members
-/// * `registers` : the structure which is desired to hold all registers
-/// * `executives` : the structure which is desired to hold all executive roles
-/// * `members_by_register` : the structure which is desired to hold all the sorted members and registers
-/// * `sutlers` : the structure which is desired to hold all sutlers
-/// * `honorary_members` : the structure which is desired to hold all honorary members
+/// * `member_state` the mutex of the current member state which should be altered
 pub async fn synchronize_members_and_groups(
     conf: &Config,
-    members: &mut AllMembers,
-    registers: &mut Registers,
-    executives: &mut Executives,
-    members_by_register: &mut MembersByRegister,
-    sutlers: &mut Sutlers,
-    honorary_members: &mut HonoraryMembers,
+    member_state: &mut Arc<Mutex<MemberState>>,
 ) {
     let ldap_conf = &conf.ldap;
     let optionals = fetch_results(conf, &ldap_conf).await;
@@ -181,33 +183,32 @@ pub async fn synchronize_members_and_groups(
         mut sutlers_vector,
         mut honorary_option,
         mut registers_vector,
-        executives_vector,
+        mut executives_vector,
     ) = optionals.unwrap();
 
     info!("done fetching, begin with transformation");
+    let mut member_state_lock = member_state.lock().await;
     fill_primitive_collections(
-        members,
-        registers,
-        executives,
-        sutlers,
-        honorary_members,
+        &mut member_state_lock,
         &mut members_vector,
         &mut sutlers_vector,
         &mut honorary_option,
         &mut registers_vector,
-        executives_vector,
+        &mut executives_vector,
     );
     debug!("done with copying data, begin with sorting");
 
-    construct_members_by_register(members_by_register, members_vector, registers_vector);
+    construct_members_by_register(&mut member_state_lock, members_vector, registers_vector);
     info!("done with user synchronization")
 }
 
+/// Constructs the sorted members by register collection and saves it to the application state.
 fn construct_members_by_register(
-    members_by_register: &mut MembersByRegister,
+    member_state: &mut MemberState,
     member_result: Vec<Member>,
     registers_result: Vec<Group>,
 ) {
+    let members_by_register = &mut member_state.members_by_register;
     members_by_register.clear();
     members_by_register.extend(registers_result.iter().map(|register| {
         let register_members = member_result
@@ -224,32 +225,35 @@ fn construct_members_by_register(
 
 /// Helper function to sort and assign primitive collections.
 fn fill_primitive_collections(
-    members: &mut AllMembers,
-    registers: &mut Registers,
-    executives: &mut Executives,
-    sutlers: &mut Sutlers,
-    honorary_members: &mut HonoraryMembers,
+    member_state: &mut MemberState,
     member_vector: &mut Vec<Member>,
     sutler_vector: &mut Vec<Member>,
     honorary_vector: &mut Vec<Member>,
     registers_vector: &mut Vec<Group>,
-    executives_vector: Vec<Group>,
+    executives_vector: &mut Vec<Group>,
 ) {
-    let executives_result = executives_vector;
-    members.clear();
+    member_state.all_members.clear();
     member_vector.sort();
-    members.extend(member_vector.iter().cloned());
-    sutlers.clear();
+    member_state
+        .all_members
+        .extend(member_vector.iter().cloned());
+    member_state.sutlers.clear();
     sutler_vector.sort();
-    sutlers.extend(sutler_vector.iter().cloned());
-    honorary_members.clear();
+    member_state.sutlers.extend(sutler_vector.iter().cloned());
+    member_state.honorary_members.clear();
     honorary_vector.sort();
-    honorary_members.extend(honorary_vector.iter().cloned());
-    registers.clear();
+    member_state
+        .honorary_members
+        .extend(honorary_vector.iter().cloned());
+    member_state.registers.clear();
     registers_vector.sort();
-    registers.extend(registers_vector.iter().cloned());
-    executives.clear();
-    executives.extend(executives_result);
+    member_state
+        .registers
+        .extend(registers_vector.iter().cloned());
+    member_state.executives.clear();
+    member_state
+        .executives
+        .extend(executives_vector.iter().cloned());
 }
 
 /// Helper function to fetch entries and return them all or none is at least one was not successful.

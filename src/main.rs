@@ -18,13 +18,17 @@
 #[macro_use]
 extern crate rocket;
 
-use crate::ldap::{AllMembers, Executives, HonoraryMembers, MembersByRegister, Registers, Sutlers};
+use crate::ldap::{
+    AllMembers, Executives, HonoraryMembers, MemberState, MembersByRegister, Registers, Sutlers,
+};
 use figment::Figment;
 use okapi::openapi3::OpenApi;
 use rocket::fairing::AdHoc;
+use rocket::tokio::sync::Mutex;
 use rocket::{Build, Rocket};
 use rocket_okapi::settings::OpenApiSettings;
 use rocket_okapi::{mount_endpoints_and_merged_docs, swagger_ui::*};
+use std::sync::Arc;
 
 mod archive;
 mod config;
@@ -41,13 +45,14 @@ async fn main() {
         env!("CARGO_PKG_VERSION")
     );
     let figment = config::read_config();
-    let server_result = create_server(figment)
-        .manage(AllMembers::new())
-        .manage(Registers::new())
-        .manage(Executives::new())
-        .manage(MembersByRegister::new())
-        .manage(Sutlers::new())
-        .manage(HonoraryMembers::new());
+    let server_result = create_server(figment).manage(Arc::new(Mutex::new(MemberState {
+        all_members: AllMembers::new(),
+        registers: Registers::new(),
+        executives: Executives::new(),
+        members_by_register: MembersByRegister::new(),
+        sutlers: Sutlers::new(),
+        honorary_members: HonoraryMembers::new(),
+    })));
     match server_result.launch().await {
         Ok(_) => info!("shutdown keg!"),
         Err(err) => error!("failed to start: {}", err.to_string()),

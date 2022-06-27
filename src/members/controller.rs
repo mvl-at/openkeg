@@ -18,12 +18,14 @@
 use crate::config::Config;
 use ldap3::tokio::task;
 use rocket::serde::json::Json;
+use rocket::tokio::sync::Mutex;
 use rocket::State;
 use rocket_okapi::openapi;
+use std::sync::Arc;
 
 use crate::errors::Result;
-use crate::ldap;
-use crate::members::model::Member;
+use crate::ldap::synchronize_members_and_groups;
+use crate::MemberState;
 
 /// Synchronize all members.
 ///
@@ -31,18 +33,15 @@ use crate::members::model::Member;
 ///
 /// * `sync` - a bool which indicates if the synchronization should block this call or not
 #[openapi(tag = "Members")]
-#[post("/synchronize?<sync>")]
-pub fn synchronize(sync: bool, config: &State<Config>) -> Result<()> {
+#[post("/synchronize")]
+pub fn synchronize(
+    config: &State<Config>,
+    member_state: &State<Arc<Mutex<MemberState>>>,
+) -> Result<()> {
     let conf_copy = config.inner().clone();
+    let mut member_state_clone = member_state.inner().clone();
     let fetch_task = async move {
-        let members = ldap::search_entries::<Member, Member>(
-            &conf_copy.ldap.member_base,
-            &conf_copy.ldap.member_filter,
-            &conf_copy,
-        )
-        .await
-        .unwrap();
-        debug!("members: {:?}", members);
+        synchronize_members_and_groups(&conf_copy, &mut member_state_clone).await;
     };
     task::spawn(fetch_task);
     Ok(Json(()))
