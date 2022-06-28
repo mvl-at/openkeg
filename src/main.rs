@@ -38,6 +38,7 @@ mod errors;
 mod ldap;
 mod members;
 mod schema_util;
+mod user;
 
 #[rocket::main]
 async fn main() {
@@ -79,7 +80,8 @@ fn create_server(figment: Figment) -> Rocket<Build> {
         rocket, "/api/v1".to_owned(), openapi_settings,
         "/" => custom_route_spec,
         "/archive" => archive::get_routes_and_docs(&openapi_settings),
-        "/members" => members::get_routes_and_docs(&openapi_settings)
+        "/members" => members::get_routes_and_docs(&openapi_settings),
+        "/user" => user::get_routes_and_docs(&openapi_settings),
     };
     rocket
 }
