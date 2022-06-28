@@ -46,3 +46,11 @@ pub fn synchronize(
     task::spawn(fetch_task);
     Ok(Json(()))
 }
+
+/// Print all members to the debug console.
+/// Only for debug purposes.
+#[openapi(tag = "Members")]
+#[get("/debug-list")]
+pub async fn list(member_state: &State<Arc<Mutex<MemberState>>>) {
+    debug!("{:?}", member_state.lock().await.all_members);
+}
