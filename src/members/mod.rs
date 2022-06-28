@@ -23,5 +23,9 @@ pub mod controller;
 pub mod model;
 
 pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
-    openapi_get_routes_spec![settings: controller::synchronize, controller::list]
+    openapi_get_routes_spec![
+        settings: controller::all_members,
+        controller::synchronize,
+        controller::list
+    ]
 }

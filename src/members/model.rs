@@ -18,9 +18,163 @@
 use crate::config::Config;
 use crate::ldap::LdapDeserializable;
 use ldap3::SearchEntry;
+use rocket::serde::{Deserialize, Serialize};
+use rocket_okapi::JsonSchema;
 use std::cmp::Ordering;
-use std::collections::HashMap;
+use std::collections::{HashMap, LinkedList};
 use std::hash::Hash;
+
+use crate::schema_util::SchemaExample;
+
+/// Representation of the whole crew intended to use for the REST API.
+#[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(crate = "rocket::serde", rename_all = "camelCase")]
+#[schemars(example = "Self::example")]
+pub struct Crew {
+    /// The musicians of the crew
+    pub musicians: LinkedList<WebRegister>,
+    /// The sutlers of the crew
+    pub sutlers: LinkedList<WebMember>,
+    /// The honorary members
+    pub honorary_members: LinkedList<WebMember>,
+}
+
+/// Representation of a register intended to use for the REST API.
+#[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename = "Register", crate = "rocket::serde", rename_all = "camelCase")]
+#[schemars(example = "Self::example")]
+pub struct WebRegister {
+    /// The name of this register
+    pub name: String,
+    /// The plural name of this register
+    pub name_plural: String,
+    /// The members which are part of this register
+    pub members: LinkedList<WebMember>,
+}
+
+/// Representation of a member intended to use for the REST API.
+#[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename = "Member", crate = "rocket::serde", rename_all = "camelCase")]
+#[schemars(example = "Self::example")]
+pub struct WebMember {
+    /// The first name of this member
+    pub first_name: String,
+    /// The last name of this member
+    pub last_name: String,
+    /// The year this member joined
+    pub joining: u32,
+    /// The gender of this member
+    pub gender: char,
+    /// Whether this member is official or not
+    pub official: bool,
+    /// Whether this member is active or not
+    pub active: bool,
+    /// Sensitive data of this member such as address and phone numbers
+    /// This is only intended for authenticated users
+    pub sensitives: Option<WebMemberSensitives>,
+}
+
+/// Sensitive data of a `WebMember` which is intended to be seen only by authenticated users.
+#[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(
+    rename = "MemberSensitives",
+    crate = "rocket::serde",
+    rename_all = "camelCase"
+)]
+#[schemars(example = "Self::example")]
+pub struct WebMemberSensitives {
+    /// The telephone numbers of the member
+    pub mobile: Vec<String>,
+    /// The birthday of the member
+    pub birthday: String,
+    /// The mail addresses of the member
+    pub mail: Vec<String>,
+    /// The actual address oft the member
+    pub address: Option<WebAddress>,
+}
+
+/// The address of a member intended for web usage.
+#[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename = "Address", crate = "rocket::serde", rename_all = "camelCase")]
+#[schemars(example = "Self::example")]
+pub struct WebAddress {
+    /// The street of this address
+    pub street: String,
+    /// The house number of this address
+    pub house_number: String,
+    /// The postal code of this address
+    pub postal_code: String,
+    /// The city of this address
+    pub city: String,
+    /// The state of this address
+    pub state: String,
+    /// The country code of this address
+    pub country_code: String,
+}
+
+impl SchemaExample for Crew {
+    fn example() -> Self {
+        Self {
+            musicians: LinkedList::from([WebRegister::example()]),
+            sutlers: LinkedList::from([WebMember::example()]),
+            honorary_members: LinkedList::from([WebMember::example()]),
+        }
+    }
+}
+
+impl SchemaExample for WebRegister {
+    fn example() -> Self {
+        Self {
+            name: "Kukuruz".to_string(),
+            name_plural: "Kukuruzn".to_string(),
+            members: LinkedList::from([WebMember::example()]),
+        }
+    }
+}
+
+impl SchemaExample for WebMember {
+    fn example() -> Self {
+        Self {
+            first_name: "Karl".to_string(),
+            last_name: "Steinscheisser".to_string(),
+            joining: 2003,
+            gender: 'm',
+            official: true,
+            active: true,
+            sensitives: Some(WebMemberSensitives::example()),
+        }
+    }
+}
+
+impl SchemaExample for WebMemberSensitives {
+    fn example() -> Self {
+        Self {
+            mobile: vec![
+                "+43 664 91828374".to_string(),
+                "+43 699 28184853".to_string(),
+            ],
+            birthday: "1996-05-06".to_string(),
+            mail: vec![
+                "joker@batman.org".to_string(),
+                "kar@steinscheisser.at".to_string(),
+            ],
+            address: Some(WebAddress::example()),
+        }
+    }
+}
+
+impl SchemaExample for WebAddress {
+    fn example() -> Self {
+        Self {
+            street: "Kempfendorf".to_string(),
+            house_number: "2".to_string(),
+            postal_code: "2285".to_string(),
+            city: "Leopoldsdorf i.M.".to_string(),
+            state: "Niederösterreich".to_string(),
+            country_code: "AT".to_string(),
+        }
+    }
+}
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Member {
