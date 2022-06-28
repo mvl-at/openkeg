@@ -25,16 +25,23 @@ use std::sync::Arc;
 
 use crate::errors::Result;
 use crate::ldap::synchronize_members_and_groups;
-use crate::members::model::Crew;
-use crate::schema_util::SchemaExample;
+use crate::members::model::{Crew, Member, WebMember, WebRegister};
 use crate::MemberState;
 
 /// Get all members without any sensitive data.
 /// Intended for the web representation of all members
 #[openapi(tag = "Members")]
 #[get("/")]
-pub async fn all_members() -> Result<Crew> {
-    Ok(Json(Crew::example()))
+pub async fn all_members(member_state: &State<Arc<RwLock<MemberState>>>) -> Result<Crew> {
+    let members = member_state.read().await;
+    let member_mapper: &dyn Fn(&Member) -> WebMember = &|m| WebMember::from_member(m, true);
+    Ok(Json(Crew::new(
+        &members.members_by_register,
+        &members.sutlers,
+        &members.honorary_members,
+        member_mapper,
+        &|r| WebRegister::from_register(r, member_mapper),
+    )))
 }
 
 /// Synchronize all members.

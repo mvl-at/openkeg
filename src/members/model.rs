@@ -16,7 +16,7 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 use crate::config::Config;
-use crate::ldap::LdapDeserializable;
+use crate::ldap::{LdapDeserializable, RegisterEntry};
 use ldap3::SearchEntry;
 use rocket::serde::{Deserialize, Serialize};
 use rocket_okapi::JsonSchema;
@@ -25,6 +25,7 @@ use std::collections::{HashMap, LinkedList};
 use std::hash::Hash;
 
 use crate::schema_util::SchemaExample;
+use crate::{HonoraryMembers, MembersByRegister, Sutlers};
 
 /// Representation of the whole crew intended to use for the REST API.
 #[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema)]
@@ -122,12 +123,41 @@ impl SchemaExample for Crew {
     }
 }
 
+impl Crew {
+    pub fn new(
+        musicians: &MembersByRegister,
+        sutlers: &Sutlers,
+        honorary_members: &HonoraryMembers,
+        member_mapper: &dyn Fn(&Member) -> WebMember,
+        register_mapper: &dyn Fn(&RegisterEntry) -> WebRegister,
+    ) -> Self {
+        Self {
+            musicians: musicians.iter().map(register_mapper).collect(),
+            sutlers: sutlers.iter().map(member_mapper).collect(),
+            honorary_members: honorary_members.iter().map(member_mapper).collect(),
+        }
+    }
+}
+
 impl SchemaExample for WebRegister {
     fn example() -> Self {
         Self {
             name: "Kukuruz".to_string(),
             name_plural: "Kukuruzn".to_string(),
             members: LinkedList::from([WebMember::example()]),
+        }
+    }
+}
+
+impl WebRegister {
+    pub fn from_register(
+        register: &RegisterEntry,
+        member_mapper: &dyn Fn(&Member) -> WebMember,
+    ) -> Self {
+        Self {
+            name: register.register.name.to_string(),
+            name_plural: register.register.name_plural.to_string(),
+            members: register.members.iter().map(member_mapper).collect(),
         }
     }
 }
@@ -142,6 +172,26 @@ impl SchemaExample for WebMember {
             official: true,
             active: true,
             sensitives: Some(WebMemberSensitives::example()),
+        }
+    }
+}
+
+impl WebMember {
+    /// Create a `WebMember` from a member.
+    ///
+    /// # Arguments
+    ///
+    /// * `member` : the `Member` to map
+    /// * `sensitive` : whether to also map sensitive data or not
+    pub fn from_member(member: &Member, sensitive: bool) -> Self {
+        Self {
+            first_name: member.first_name.to_string(),
+            last_name: member.last_name.to_string(),
+            joining: member.joining,
+            gender: member.gender,
+            official: member.official,
+            active: member.active,
+            sensitives: sensitive.then(|| WebMemberSensitives::from_member(member)),
         }
     }
 }
@@ -163,6 +213,21 @@ impl SchemaExample for WebMemberSensitives {
     }
 }
 
+impl WebMemberSensitives {
+    pub fn from_member(member: &Member) -> Self {
+        Self {
+            mobile: member.mobile.clone(),
+            birthday: member.birthday.to_string(),
+            mail: member.mail.clone(),
+            address: member
+                .address
+                .as_ref()
+                .clone()
+                .map(|a| WebAddress::from_address(a)),
+        }
+    }
+}
+
 impl SchemaExample for WebAddress {
     fn example() -> Self {
         Self {
@@ -172,6 +237,19 @@ impl SchemaExample for WebAddress {
             city: "Leopoldsdorf i.M.".to_string(),
             state: "Niederösterreich".to_string(),
             country_code: "AT".to_string(),
+        }
+    }
+}
+
+impl WebAddress {
+    pub fn from_address(address: &Address) -> Self {
+        Self {
+            street: address.street.to_string(),
+            house_number: address.house_number.to_string(),
+            postal_code: address.postal_code.to_string(),
+            city: address.city.to_string(),
+            state: address.state.to_string(),
+            country_code: address.country_code.to_string(),
         }
     }
 }
@@ -261,7 +339,7 @@ impl LdapDeserializable<Member> for Member {
                 .next()
                 .unwrap_or('u'),
             active: bool_or_false(&mapping.active, attrs),
-            mobile: string_or_empty(&mapping.username, attrs),
+            mobile: string_or_empty(&mapping.mobile, attrs),
             birthday: string_or_empty(&mapping.birthday, attrs)[0].to_string(),
             mail: string_or_empty(&mapping.mail, attrs),
             photo: entry
