@@ -17,7 +17,7 @@
 
 use ldap3::{Ldap, LdapConnAsync, LdapError, Scope, SearchEntry};
 use rocket::tokio;
-use rocket::tokio::sync::Mutex;
+use rocket::tokio::sync::RwLock;
 use std::collections::{HashSet, LinkedList};
 use std::sync::Arc;
 use std::time::Duration;
@@ -173,7 +173,7 @@ where
 /// * `member_state` the mutex of the current member state which should be altered
 pub async fn synchronize_members_and_groups(
     conf: &Config,
-    member_state: &mut Arc<Mutex<MemberState>>,
+    member_state: &mut Arc<RwLock<MemberState>>,
 ) {
     let ldap_conf = &conf.ldap;
     let optionals = fetch_results(conf, &ldap_conf).await;
@@ -189,7 +189,7 @@ pub async fn synchronize_members_and_groups(
     ) = optionals.unwrap();
 
     info!("done fetching, begin with transformation");
-    let mut member_state_lock = member_state.lock().await;
+    let mut member_state_lock = member_state.write().await;
     fill_primitive_collections(
         &mut member_state_lock,
         &mut members_vector,
@@ -370,7 +370,7 @@ where
 
 pub async fn member_synchronization_task(
     conf: &Config,
-    member_state: &mut Arc<Mutex<MemberState>>,
+    member_state: &mut Arc<RwLock<MemberState>>,
 ) {
     let mut interval =
         tokio::time::interval(Duration::from_secs(conf.ldap.synchronization_interval));

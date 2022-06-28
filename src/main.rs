@@ -26,7 +26,7 @@ use figment::Figment;
 use ldap3::tokio::task;
 use okapi::openapi3::OpenApi;
 use rocket::fairing::AdHoc;
-use rocket::tokio::sync::Mutex;
+use rocket::tokio::sync::RwLock;
 use rocket::{Build, Rocket};
 use rocket_okapi::settings::OpenApiSettings;
 use rocket_okapi::{mount_endpoints_and_merged_docs, swagger_ui::*};
@@ -47,7 +47,7 @@ async fn main() {
         env!("CARGO_PKG_VERSION")
     );
     let figment = config::read_config();
-    let member_state = Arc::new(Mutex::new(MemberState {
+    let member_state = Arc::new(RwLock::new(MemberState {
         all_members: AllMembers::new(),
         registers: Registers::new(),
         executives: Executives::new(),
@@ -86,7 +86,7 @@ fn create_server(figment: Figment) -> Rocket<Build> {
 
 fn register_user_sync_task(server: &Rocket<Build>) {
     let config: Config = server.figment().extract().expect("config");
-    let member_state_option = server.state::<Arc<Mutex<MemberState>>>();
+    let member_state_option = server.state::<Arc<RwLock<MemberState>>>();
     if member_state_option.is_none() {
         warn!("unable to retrieve member state, scheduled user synchronization will not work");
         return;

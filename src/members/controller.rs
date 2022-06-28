@@ -18,7 +18,7 @@
 use crate::config::Config;
 use ldap3::tokio::task;
 use rocket::serde::json::Json;
-use rocket::tokio::sync::Mutex;
+use rocket::tokio::sync::RwLock;
 use rocket::State;
 use rocket_okapi::openapi;
 use std::sync::Arc;
@@ -36,7 +36,7 @@ use crate::MemberState;
 #[post("/synchronize")]
 pub fn synchronize(
     config: &State<Config>,
-    member_state: &State<Arc<Mutex<MemberState>>>,
+    member_state: &State<Arc<RwLock<MemberState>>>,
 ) -> Result<()> {
     let conf_copy = config.inner().clone();
     let mut member_state_clone = member_state.inner().clone();
@@ -51,6 +51,6 @@ pub fn synchronize(
 /// Only for debug purposes.
 #[openapi(tag = "Members")]
 #[get("/debug-list")]
-pub async fn list(member_state: &State<Arc<Mutex<MemberState>>>) {
-    debug!("{:?}", member_state.lock().await.all_members);
+pub async fn list(member_state: &State<Arc<RwLock<MemberState>>>) {
+    debug!("{:?}", member_state.read().await.all_members);
 }
