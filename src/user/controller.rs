@@ -25,7 +25,9 @@ use rocket_okapi::openapi;
 
 use crate::errors::{Error, Result};
 use crate::ldap::authenticate;
-use crate::user::model::BasicAuth;
+use crate::user::key::PrivateKey;
+use crate::user::model::{AuthenticationResponder, BasicAuth};
+use crate::user::tokens::generate_token;
 use crate::{Config, MemberState, MemberStateMutex};
 
 /// Login the user.
@@ -51,8 +53,9 @@ use crate::{Config, MemberState, MemberStateMutex};
 pub async fn login(
     auth: BasicAuth,
     config: &State<Config>,
+    private_key: &State<PrivateKey>,
     member_state: &State<MemberStateMutex>,
-) -> Result<()> {
+) -> AuthenticationResponder {
     let mut member_state_clone = member_state.inner().clone();
     let member_result = authenticate(
         config,
@@ -62,13 +65,28 @@ pub async fn login(
     )
     .await;
     if member_result.is_ok() {
-        debug!("authenticated user: {:?}", member_result.unwrap());
-        Ok(Json(()))
+        let member = member_result.unwrap();
+        debug!("authenticated user: {}", member.username);
+        let (request_token, renewal_token) = (
+            generate_token(&member, true, config, private_key),
+            generate_token(&member, false, config, private_key),
+        );
+        debug!(
+            "generated tokens {:?} and {:?}",
+            request_token, renewal_token
+        );
+        AuthenticationResponder {
+            request_token: request_token.ok(),
+            renewal_token: renewal_token.ok(),
+            request_token_required: true,
+            renewal_token_required: true,
+        }
     } else {
-        Err(Error {
-            err: "authentication error".to_string(),
-            msg: Some("Unable to authenticate the user".to_string()),
-            http_status_code: Status::Forbidden.code,
-        })
+        AuthenticationResponder {
+            request_token: None,
+            renewal_token: None,
+            request_token_required: true,
+            renewal_token_required: true,
+        }
     }
 }
