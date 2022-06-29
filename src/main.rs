@@ -18,10 +18,8 @@
 #[macro_use]
 extern crate rocket;
 
-use crate::config::Config;
-use crate::ldap::{
-    AllMembers, Executives, HonoraryMembers, MemberState, MembersByRegister, Registers, Sutlers,
-};
+use std::sync::Arc;
+
 use figment::Figment;
 use ldap3::tokio::task;
 use okapi::openapi3::OpenApi;
@@ -30,7 +28,11 @@ use rocket::tokio::sync::RwLock;
 use rocket::{Build, Rocket};
 use rocket_okapi::settings::OpenApiSettings;
 use rocket_okapi::{mount_endpoints_and_merged_docs, swagger_ui::*};
-use std::sync::Arc;
+
+use crate::config::Config;
+use crate::ldap::{
+    AllMembers, Executives, HonoraryMembers, MemberState, MembersByRegister, Registers, Sutlers,
+};
 
 mod archive;
 mod config;
@@ -63,6 +65,8 @@ async fn main() {
         Err(err) => error!("failed to start: {}", err.to_string()),
     }
 }
+
+pub type MemberStateMutex = Arc<RwLock<MemberState>>;
 
 fn create_server(figment: Figment) -> Rocket<Build> {
     let custom_route_spec = (vec![], custom_openapi_spec());

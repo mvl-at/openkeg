@@ -17,11 +17,18 @@
 
 use okapi::openapi3::{Object, SecurityRequirement, SecurityScheme, SecuritySchemeData};
 use rocket::http::Status;
+use rocket::outcome::Outcome::{Failure, Forward, Success};
 use rocket::request::{FromRequest, Outcome};
 use rocket::Request;
 use rocket_okapi::gen::OpenApiGenerator;
 use rocket_okapi::request::{OpenApiFromRequest, RequestHeaderInput};
 
+use crate::members::model::Member;
+use crate::user::key::PublicKey;
+use crate::user::tokens::validate_token;
+use crate::MemberStateMutex;
+
+#[non_exhaustive]
 pub struct BasicAuth {
     pub username: String,
     pub password: String,
@@ -77,7 +84,7 @@ impl<'r> OpenApiFromRequest<'r> for BasicAuth {
         let mut security_req = SecurityRequirement::new();
         // Each security requirement needs to be met before access is allowed.
         security_req.insert("login".to_owned(), Vec::new());
-        rocket_okapi::Result::Ok(RequestHeaderInput::Security(
+        Ok(RequestHeaderInput::Security(
             "login".to_string(),
             SecurityScheme {
                 description: Some("Required for the login".to_string()),
@@ -89,5 +96,41 @@ impl<'r> OpenApiFromRequest<'r> for BasicAuth {
             },
             security_req,
         ))
+    }
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for Member {
+    type Error = ();
+
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let auth_header = request.headers().get_one("Authorization");
+        if auth_header.is_none() {
+            debug!("request does not contain Authorization header");
+            return Forward(());
+        }
+        let bearer = String::from(auth_header.unwrap());
+        if !bearer.starts_with("Bearer ") {
+            debug!("token does not start with Bearer");
+            return Forward(());
+        }
+        let token = bearer.replace("Bearer ", "");
+        let members = request.rocket().state::<MemberStateMutex>();
+        if members.is_none() {
+            warn!("unable to retrieve members, requests using authentication will not work");
+            return Forward(());
+        }
+        let public_key = request.rocket().state::<PublicKey>();
+        if public_key.is_none() {
+            warn!("unable to retrieve public key, requests using authentication will not work");
+            return Forward(());
+        }
+        let all_members = members.unwrap().read().await;
+        let member = validate_token(&token, false, &all_members.all_members, public_key.unwrap());
+        if member.is_err() {
+            debug!("token was invalid");
+            return Failure((Status::Unauthorized, ()));
+        }
+        Success(member.unwrap())
     }
 }

@@ -15,15 +15,6 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-use okapi::openapi3::OpenApi;
-use rocket_okapi::openapi_get_routes_spec;
-use rocket_okapi::settings::OpenApiSettings;
+pub struct PrivateKey(pub(crate) Vec<u8>);
 
-pub mod controller;
-pub mod key;
-pub mod model;
-pub mod tokens;
-
-pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
-    openapi_get_routes_spec![settings: controller::login]
-}
+pub struct PublicKey(pub(crate) Vec<u8>);

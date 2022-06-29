@@ -24,12 +24,14 @@ use rocket::serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     pub ldap: LdapConfig,
+    pub jwt: JwtConfig,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Config {
             ldap: Default::default(),
+            jwt: Default::default(),
         }
     }
 }
@@ -158,6 +160,26 @@ impl Default for GroupMapping {
             name_plural: "cns".to_string(),
             description: "description".to_string(),
             members: "member".to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct JwtConfig {
+    /// The expiration of request tokens given in *minutes*.
+    pub expiration: i64,
+    /// The expiration of the refresh tokens given in *hours*.
+    pub renewal_expiration: i64,
+    /// The issuer used for token genertion
+    pub issuer: String,
+}
+
+impl Default for JwtConfig {
+    fn default() -> Self {
+        Self {
+            expiration: 2 * 60,
+            renewal_expiration: 365 * 24,
+            issuer: "keg".to_string(),
         }
     }
 }
