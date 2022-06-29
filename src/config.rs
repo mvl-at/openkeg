@@ -197,8 +197,8 @@ pub struct CertConfig {
 impl Default for CertConfig {
     fn default() -> Self {
         Self {
-            private_key_path: "".to_string(),
-            public_key_path: "".to_string(),
+            private_key_path: "keg-private-key.der".to_string(),
+            public_key_path: "keg-public-key.der".to_string(),
         }
     }
 }
