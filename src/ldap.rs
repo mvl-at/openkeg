@@ -15,12 +15,13 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-use ldap3::{Ldap, LdapConnAsync, LdapError, Scope, SearchEntry};
-use rocket::tokio;
-use rocket::tokio::sync::RwLock;
 use std::collections::{HashSet, LinkedList};
 use std::sync::Arc;
 use std::time::Duration;
+
+use ldap3::{Ldap, LdapConnAsync, LdapError, Scope, SearchEntry};
+use rocket::tokio;
+use rocket::tokio::sync::RwLock;
 
 use crate::config::{Config, LdapConfig};
 use crate::ldap;
@@ -39,6 +40,21 @@ pub type MembersByRegister = LinkedList<RegisterEntry>;
 pub type Sutlers = LinkedList<Member>;
 /// All honorary members
 pub type HonoraryMembers = LinkedList<Member>;
+
+pub trait Repository<ID, E> {
+    fn find(&self, id: &ID) -> Option<&E>;
+}
+
+impl Repository<String, Member> for AllMembers {
+    fn find(&self, id: &String) -> Option<&Member> {
+        self.iter()
+            .filter(|m| {
+                m.username.eq_ignore_ascii_case(id)
+                    || m.mail.iter().any(|mail| mail.eq_ignore_ascii_case(id))
+            })
+            .next()
+    }
+}
 
 /// The state of all member data
 pub struct MemberState {
@@ -366,6 +382,69 @@ where
         typ
     );
     Some(ldap_entries)
+}
+
+/// Authenticate a member against the directory server using bind.
+///
+/// # Arguments
+///
+/// * `config`: the application configuration
+/// * `member_state`: the state which holds the members
+/// * `username`: the username to use for authentication. this is _not_ the dn but the value of the username attributes of the member
+/// * `password`: the password to use for the authentication
+///
+/// returns: Result<Member, ()>
+///
+/// # Examples
+///
+/// ```
+/// let result = authenticate(&config, &member_state, &"willi".to_string(), &"some-secret".to_string());
+/// if result.is_ok() {
+///     //authentication was successful
+/// } else {
+///     //authentication failed
+/// }
+/// ```
+pub async fn authenticate(
+    config: &Config,
+    member_state: &mut Arc<RwLock<MemberState>>,
+    username: &String,
+    password: &String,
+) -> Result<Member, ()> {
+    debug!("try to authenticate {}", username);
+    let member_state_lock = member_state.read().await;
+    let member_option = member_state_lock.all_members.find(username);
+    if member_option.is_none() {
+        info!(
+            "someone tried to authenticate with non-existing username: {}",
+            username
+        );
+        return Err(());
+    }
+    let member = member_option.unwrap();
+    let dn = &member.full_username;
+    let ldap_config = &config.ldap;
+    info!("bind to ldap server: {}", ldap_config.server);
+    let ldap_result = LdapConnAsync::new(&*ldap_config.server).await;
+    if ldap_result.is_err() {
+        error!(
+            "failed to open ldap session: {:#?}",
+            ldap_result.err().unwrap()
+        );
+        return Err(());
+    }
+    let (conn, mut ldap) = ldap_result.unwrap();
+    ldap3::drive!(conn);
+    let result = ldap.simple_bind(dn, password).await;
+    if result.is_err() {
+        return Err(());
+    }
+    let res = result.unwrap();
+    if res.success().is_ok() {
+        info!("authenticated {}", member.username);
+        return Ok(member.clone());
+    }
+    Err(())
 }
 
 pub async fn member_synchronization_task(
