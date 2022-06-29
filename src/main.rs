@@ -126,7 +126,7 @@ fn manage_keys(server: Rocket<Build>) -> Rocket<Build> {
             config.cert.private_key_path, err
         );
     } else {
-        server_manage = server_manage.manage(private_key);
+        server_manage = server_manage.manage(private_key.unwrap());
         info!("private key successfully added to application state")
     }
     let public_key = read_public_key(&config);
@@ -137,7 +137,7 @@ fn manage_keys(server: Rocket<Build>) -> Rocket<Build> {
             config.cert.public_key_path, err
         );
     } else {
-        server_manage = server_manage.manage(public_key);
+        server_manage = server_manage.manage(public_key.unwrap());
         info!("public key successfully added to application state")
     }
     server_manage
