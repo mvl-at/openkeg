@@ -26,7 +26,7 @@ use rocket_okapi::openapi;
 use crate::errors::{Error, Result};
 use crate::ldap::authenticate;
 use crate::user::model::BasicAuth;
-use crate::{Config, MemberState};
+use crate::{Config, MemberState, MemberStateMutex};
 
 /// Login the user.
 /// On success, this generates two keys:
@@ -51,7 +51,7 @@ use crate::{Config, MemberState};
 pub async fn login(
     auth: BasicAuth,
     config: &State<Config>,
-    member_state: &State<Arc<RwLock<MemberState>>>,
+    member_state: &State<MemberStateMutex>,
 ) -> Result<()> {
     let mut member_state_clone = member_state.inner().clone();
     let member_result = authenticate(

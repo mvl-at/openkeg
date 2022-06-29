@@ -24,8 +24,8 @@ use rocket::tokio;
 use rocket::tokio::sync::RwLock;
 
 use crate::config::{Config, LdapConfig};
-use crate::ldap;
 use crate::members::model::{Group, Member};
+use crate::{ldap, MemberStateMutex};
 
 /// All members with no further order
 pub type AllMembers = HashSet<Member>;
@@ -187,10 +187,7 @@ where
 ///
 /// * `conf` : the application configuration
 /// * `member_state` the mutex of the current member state which should be altered
-pub async fn synchronize_members_and_groups(
-    conf: &Config,
-    member_state: &mut Arc<RwLock<MemberState>>,
-) {
+pub async fn synchronize_members_and_groups(conf: &Config, member_state: &mut MemberStateMutex) {
     let ldap_conf = &conf.ldap;
     let optionals = fetch_results(conf, &ldap_conf).await;
     if optionals.is_none() {
@@ -407,7 +404,7 @@ where
 /// ```
 pub async fn authenticate(
     config: &Config,
-    member_state: &mut Arc<RwLock<MemberState>>,
+    member_state: &mut MemberStateMutex,
     username: &String,
     password: &String,
 ) -> Result<Member, ()> {
@@ -447,10 +444,7 @@ pub async fn authenticate(
     Err(())
 }
 
-pub async fn member_synchronization_task(
-    conf: &Config,
-    member_state: &mut Arc<RwLock<MemberState>>,
-) {
+pub async fn member_synchronization_task(conf: &Config, member_state: &mut MemberStateMutex) {
     let mut interval =
         tokio::time::interval(Duration::from_secs(conf.ldap.synchronization_interval));
     loop {

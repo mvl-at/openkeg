@@ -15,24 +15,22 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-use crate::config::Config;
 use ldap3::tokio::task;
 use rocket::serde::json::Json;
-use rocket::tokio::sync::RwLock;
 use rocket::State;
 use rocket_okapi::openapi;
-use std::sync::Arc;
 
+use crate::config::Config;
 use crate::errors::Result;
 use crate::ldap::synchronize_members_and_groups;
 use crate::members::model::{Crew, Member, WebMember, WebRegister};
-use crate::MemberState;
+use crate::MemberStateMutex;
 
 /// Get all members without any sensitive data.
 /// Intended for the web representation of all members
 #[openapi(tag = "Members")]
 #[get("/")]
-pub async fn all_members(member_state: &State<Arc<RwLock<MemberState>>>) -> Result<Crew> {
+pub async fn all_members(member_state: &State<MemberStateMutex>) -> Result<Crew> {
     let members = member_state.read().await;
     let member_mapper: &dyn Fn(&Member) -> WebMember = &|m| WebMember::from_member(m, true);
     Ok(Json(Crew::new(
@@ -51,10 +49,7 @@ pub async fn all_members(member_state: &State<Arc<RwLock<MemberState>>>) -> Resu
 /// * `sync` - a bool which indicates if the synchronization should block this call or not
 #[openapi(tag = "Members")]
 #[post("/synchronize")]
-pub fn synchronize(
-    config: &State<Config>,
-    member_state: &State<Arc<RwLock<MemberState>>>,
-) -> Result<()> {
+pub fn synchronize(config: &State<Config>, member_state: &State<MemberStateMutex>) -> Result<()> {
     let conf_copy = config.inner().clone();
     let mut member_state_clone = member_state.inner().clone();
     let fetch_task = async move {
@@ -68,6 +63,6 @@ pub fn synchronize(
 /// Only for debug purposes.
 #[openapi(tag = "Members")]
 #[get("/debug-list")]
-pub async fn list(member_state: &State<Arc<RwLock<MemberState>>>) {
+pub async fn list(member_state: &State<MemberStateMutex>) {
     debug!("{:?}", member_state.read().await.all_members);
 }

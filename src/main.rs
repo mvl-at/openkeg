@@ -92,7 +92,7 @@ fn create_server(figment: Figment) -> Rocket<Build> {
 
 fn register_user_sync_task(server: &Rocket<Build>) {
     let config: Config = server.figment().extract().expect("config");
-    let member_state_option = server.state::<Arc<RwLock<MemberState>>>();
+    let member_state_option = server.state::<MemberStateMutex>();
     if member_state_option.is_none() {
         warn!("unable to retrieve member state, scheduled user synchronization will not work");
         return;
