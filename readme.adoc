@@ -33,7 +33,7 @@ The following commands will generate a private key, a public key and an X.509 ce
 [source,shell script]
 ----
 openssl req -x509 -newkey rsa:4096 -days 365 -utf8 -nodes -outform PEM -keyform PEM -keyout keg-private-key.pem -out keg.crt -sha512
-openssl pkcs8 -topk8 -inform PEM -outform DER -in keg-private-key.pem -out keg-private-key.der -nocrypt
+openssl rsa -in keg-private-key.pem -inform PEM -outform DER -out keg-private-key.der
 openssl rsa -in keg-private-key.der -pubout -inform DER -outform DER -out keg-public-key.der
 ----
 
