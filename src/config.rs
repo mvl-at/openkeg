@@ -25,6 +25,7 @@ use rocket::serde::{Deserialize, Serialize};
 pub struct Config {
     pub ldap: LdapConfig,
     pub jwt: JwtConfig,
+    pub cert: CertConfig,
 }
 
 impl Default for Config {
@@ -32,6 +33,7 @@ impl Default for Config {
         Config {
             ldap: Default::default(),
             jwt: Default::default(),
+            cert: Default::default(),
         }
     }
 }
@@ -180,6 +182,23 @@ impl Default for JwtConfig {
             expiration: 2 * 60,
             renewal_expiration: 365 * 24,
             issuer: "keg".to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CertConfig {
+    /// The path to the private key in the der format
+    pub private_key_path: String,
+    /// The path to the public key in the der format
+    pub public_key_path: String,
+}
+
+impl Default for CertConfig {
+    fn default() -> Self {
+        Self {
+            private_key_path: "".to_string(),
+            public_key_path: "".to_string(),
         }
     }
 }
