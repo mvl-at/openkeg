@@ -18,6 +18,7 @@
 #[macro_use]
 extern crate rocket;
 
+use std::borrow::Borrow;
 use std::sync::Arc;
 
 use figment::Figment;
@@ -33,6 +34,7 @@ use crate::config::Config;
 use crate::ldap::{
     AllMembers, Executives, HonoraryMembers, MemberState, MembersByRegister, Registers, Sutlers,
 };
+use crate::user::key::{read_private_key, read_public_key};
 
 mod archive;
 mod config;
@@ -58,7 +60,8 @@ async fn main() {
         sutlers: Sutlers::new(),
         honorary_members: HonoraryMembers::new(),
     }));
-    let server_result = create_server(figment).manage(member_state);
+    let mut server_result = create_server(figment).manage(member_state);
+    server_result = manage_keys(server_result);
     register_user_sync_task(&server_result);
     match server_result.launch().await {
         Ok(_) => info!("shutdown keg!"),
@@ -79,7 +82,7 @@ fn create_server(figment: Figment) -> Rocket<Build> {
                 ..Default::default()
             }),
         )
-        .attach(AdHoc::config::<config::Config>());
+        .attach(AdHoc::config::<Config>());
     mount_endpoints_and_merged_docs! {
         rocket, "/api/v1".to_owned(), openapi_settings,
         "/" => custom_route_spec,
@@ -101,6 +104,43 @@ fn register_user_sync_task(server: &Rocket<Build>) {
     task::spawn(async move {
         ldap::member_synchronization_task(&config, &mut member_state_clone).await;
     });
+}
+
+/// Let the server manage the private and the public key.
+/// Warnings will be printed to the log if this operation fails.
+///
+/// # Arguments
+///
+/// * `server`: the server where to register the keys
+///
+/// returns: Rocket<Build>
+fn manage_keys(server: Rocket<Build>) -> Rocket<Build> {
+    let config: Config = server.figment().extract().expect("config");
+    info!("read the public and the private key");
+    let mut server_manage = server;
+    let private_key = read_private_key(&config);
+    if private_key.is_err() {
+        let err = private_key.err().unwrap();
+        warn!(
+            "unable to read the private key from {}: {}",
+            config.cert.private_key_path, err
+        );
+    } else {
+        server_manage = server_manage.manage(private_key);
+        info!("private key successfully added to application state")
+    }
+    let public_key = read_public_key(&config);
+    if public_key.is_err() {
+        let err = public_key.err().unwrap();
+        warn!(
+            "unable to read the public key from {}: {}",
+            config.cert.public_key_path, err
+        );
+    } else {
+        server_manage = server_manage.manage(public_key);
+        info!("public key successfully added to application state")
+    }
+    server_manage
 }
 
 fn openapi_settings() -> OpenApiSettings {

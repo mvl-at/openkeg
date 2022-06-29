@@ -15,6 +15,35 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+use std::fs;
+use std::io::Error;
+
+use crate::Config;
+
+/// The private key used in this application e.g. for jwt signing.
 pub struct PrivateKey(pub(crate) Vec<u8>);
 
+/// The public key used in this application e.g. for signature checks.
 pub struct PublicKey(pub(crate) Vec<u8>);
+
+/// Reads the private key from the file whose path is provided in the application configuration.
+///
+/// # Arguments
+///
+/// * `config`: the application configuration
+///
+/// returns: Result<PrivateKey, Error>
+pub fn read_private_key(config: &Config) -> Result<PrivateKey, Error> {
+    fs::read(&config.cert.private_key_path).map(|k| PrivateKey(k))
+}
+
+/// Reads the public key from the file whose path is provided in the application configuration.
+///
+/// # Arguments
+///
+/// * `config`: the application configuration
+///
+/// returns: Result<PublicKey, Error>
+pub fn read_public_key(config: &Config) -> Result<PublicKey, Error> {
+    fs::read(&config.cert.public_key_path).map(|k| PublicKey(k))
+}
