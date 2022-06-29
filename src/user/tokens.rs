@@ -60,12 +60,13 @@ pub fn generate_token(
         exp: expiration.timestamp() as u64,
         ren: renewal,
     };
+    debug!("private key length: {}", &private_key.0.len());
     jsonwebtoken::encode(
         &Header::new(Algorithm::RS512),
         &claims,
         &EncodingKey::from_rsa_der(&private_key.0),
     )
-    .map_err(|_| ())
+    .map_err(|e| warn!("encoding error: {}", e))
 }
 
 /// Function to validate a jwt token.
