@@ -16,14 +16,17 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 use ldap3::tokio::task;
+use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket::State;
 use rocket_okapi::openapi;
 
 use crate::config::Config;
-use crate::errors::Result;
+use crate::errors::{Error, Result};
 use crate::ldap::sync::synchronize_members_and_groups;
 use crate::members::model::{Crew, Member, WebMember, WebRegister};
+use crate::members::photo::Photo;
+use crate::members::state::Repository;
 use crate::MemberStateMutex;
 
 /// Get all members without any sensitive data.
@@ -40,6 +43,34 @@ pub async fn all_members(member_state: &State<MemberStateMutex>) -> Result<Crew>
         member_mapper,
         &|r| WebRegister::from_register(r, member_mapper),
     )))
+}
+
+/// Return the profile photo of a member in the JPEG format.
+///
+/// # Arguments
+///
+/// * `username`: the username of the member whose photo is requested
+/// * `member_state`: the state of all members
+///
+/// returns: Result<Photo, Error>
+#[openapi(tag = "Members")]
+#[get("/<username>/photo")]
+pub async fn photo(
+    username: String,
+    member_state: &State<MemberStateMutex>,
+) -> std::result::Result<Photo, Error> {
+    let member_state_lock = member_state.read().await;
+    let member_option = member_state_lock.all_members.find(&username);
+    if member_option.is_none() {
+        debug!("unable to find member with username {}", username);
+        return Err(Error {
+            err: "Not Found".to_string(),
+            msg: Some("No member with such username".to_string()),
+            http_status_code: Status::NotFound.code,
+        });
+    }
+    let member = member_option.unwrap();
+    Ok(Photo(member.photo.to_vec()))
 }
 
 /// Synchronize all members.
