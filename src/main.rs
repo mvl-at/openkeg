@@ -30,6 +30,7 @@ use rocket_okapi::settings::OpenApiSettings;
 use rocket_okapi::{mount_endpoints_and_merged_docs, swagger_ui::*};
 
 use crate::config::Config;
+use crate::cors::CORS;
 use crate::ldap::auth;
 use crate::ldap::sync::member_synchronization_task;
 use crate::members::state::MemberState;
@@ -37,6 +38,7 @@ use crate::user::key::{read_private_key, read_public_key};
 
 mod archive;
 mod config;
+mod cors;
 mod errors;
 mod ldap;
 mod members;
@@ -53,7 +55,7 @@ async fn main() {
     let figment = config::read_config();
     let member_state = MemberState::mutex();
     let mut server_result = create_server(figment).manage(member_state);
-    server_result = manage_keys(server_result);
+    server_result = manage_keys(server_result).attach(CORS);
     register_user_sync_task(&server_result);
     match server_result.launch().await {
         Ok(_) => info!("shutdown keg!"),
