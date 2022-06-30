@@ -15,20 +15,14 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-use std::sync::Arc;
-
-use rocket::http::Status;
-use rocket::serde::json::Json;
-use rocket::tokio::sync::RwLock;
 use rocket::State;
 use rocket_okapi::openapi;
 
-use crate::errors::{Error, Result};
-use crate::ldap::authenticate;
+use crate::auth::authenticate;
 use crate::user::key::PrivateKey;
 use crate::user::model::{AuthenticationResponder, BasicAuth};
 use crate::user::tokens::generate_token;
-use crate::{Config, MemberState, MemberStateMutex};
+use crate::{Config, MemberStateMutex};
 
 /// Login the user.
 /// On success, this generates two keys:

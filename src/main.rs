@@ -18,7 +18,6 @@
 #[macro_use]
 extern crate rocket;
 
-use std::borrow::Borrow;
 use std::sync::Arc;
 
 use figment::Figment;
@@ -31,9 +30,9 @@ use rocket_okapi::settings::OpenApiSettings;
 use rocket_okapi::{mount_endpoints_and_merged_docs, swagger_ui::*};
 
 use crate::config::Config;
-use crate::ldap::{
-    AllMembers, Executives, HonoraryMembers, MemberState, MembersByRegister, Registers, Sutlers,
-};
+use crate::ldap::auth;
+use crate::ldap::sync::member_synchronization_task;
+use crate::members::state::MemberState;
 use crate::user::key::{read_private_key, read_public_key};
 
 mod archive;
@@ -52,14 +51,7 @@ async fn main() {
         env!("CARGO_PKG_VERSION")
     );
     let figment = config::read_config();
-    let member_state = Arc::new(RwLock::new(MemberState {
-        all_members: AllMembers::new(),
-        registers: Registers::new(),
-        executives: Executives::new(),
-        members_by_register: MembersByRegister::new(),
-        sutlers: Sutlers::new(),
-        honorary_members: HonoraryMembers::new(),
-    }));
+    let member_state = MemberState::mutex();
     let mut server_result = create_server(figment).manage(member_state);
     server_result = manage_keys(server_result);
     register_user_sync_task(&server_result);
@@ -102,7 +94,7 @@ fn register_user_sync_task(server: &Rocket<Build>) {
     }
     let mut member_state_clone = member_state_option.unwrap().clone();
     task::spawn(async move {
-        ldap::member_synchronization_task(&config, &mut member_state_clone).await;
+        member_synchronization_task(&config, &mut member_state_clone).await;
     });
 }
 

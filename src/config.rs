@@ -62,7 +62,7 @@ pub struct LdapConfig {
 impl Default for LdapConfig {
     fn default() -> Self {
         Self {
-            server: "ldap://localhost:389".to_string(),
+            server: "auth://localhost:389".to_string(),
             dn: None,
             password: None,
             synchronization_interval: 300,

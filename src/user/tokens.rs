@@ -19,10 +19,10 @@ use chrono::Duration;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use rocket::serde::{Deserialize, Serialize};
 
-use crate::ldap::Repository;
 use crate::members::model::Member;
+use crate::members::state::{AllMembers, Repository};
 use crate::user::key::{PrivateKey, PublicKey};
-use crate::{AllMembers, Config};
+use crate::Config;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Claims {

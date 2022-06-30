@@ -16,7 +16,8 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 use crate::config::Config;
-use crate::ldap::{LdapDeserializable, RegisterEntry};
+use crate::ldap::LdapDeserializable;
+use crate::members::state::{HonoraryMembers, MembersByRegister, RegisterEntry, Sutlers};
 use ldap3::SearchEntry;
 use rocket::serde::{Deserialize, Serialize};
 use rocket_okapi::JsonSchema;
@@ -25,7 +26,6 @@ use std::collections::{HashMap, LinkedList};
 use std::hash::Hash;
 
 use crate::schema_util::SchemaExample;
-use crate::{HonoraryMembers, MembersByRegister, Sutlers};
 
 /// Representation of the whole crew intended to use for the REST API.
 #[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema)]

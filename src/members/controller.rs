@@ -22,7 +22,7 @@ use rocket_okapi::openapi;
 
 use crate::config::Config;
 use crate::errors::Result;
-use crate::ldap::synchronize_members_and_groups;
+use crate::ldap::sync::synchronize_members_and_groups;
 use crate::members::model::{Crew, Member, WebMember, WebRegister};
 use crate::MemberStateMutex;
 
