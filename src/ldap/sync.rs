@@ -238,8 +238,8 @@ pub async fn member_synchronization_task(conf: &Config, member_state: &mut Membe
     let mut interval =
         tokio::time::interval(Duration::from_secs(conf.ldap.synchronization_interval));
     loop {
+        interval.tick().await;
         info!("running scheduled user synchronization");
         synchronize_members_and_groups(conf, member_state).await;
-        interval.tick().await;
     }
 }
