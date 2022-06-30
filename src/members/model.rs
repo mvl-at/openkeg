@@ -70,6 +70,10 @@ pub struct WebMember {
     pub official: bool,
     /// Whether this member is active or not
     pub active: bool,
+    /// The username of the user to e.g. fetch the photo
+    pub username: String,
+    /// The titles of the user
+    pub titles: Vec<String>,
     /// Sensitive data of this member such as address and phone numbers
     /// This is only intended for authenticated users
     pub sensitives: Option<WebMemberSensitives>,
@@ -171,6 +175,8 @@ impl SchemaExample for WebMember {
             gender: 'm',
             official: true,
             active: true,
+            username: "karli".to_string(),
+            titles: vec!["Held".to_string()],
             sensitives: Some(WebMemberSensitives::example()),
         }
     }
@@ -191,6 +197,8 @@ impl WebMember {
             gender: member.gender,
             official: member.official,
             active: member.active,
+            username: member.username.to_string(),
+            titles: member.titles.clone(),
             sensitives: sensitive.then(|| WebMemberSensitives::from_member(member)),
         }
     }
@@ -271,6 +279,7 @@ pub struct Member {
     pub birthday: String,
     pub mail: Vec<String>,
     pub photo: Vec<u8>,
+    pub titles: Vec<String>,
     pub address: Option<Address>,
 }
 
@@ -323,24 +332,24 @@ impl LdapDeserializable<Member> for Member {
         let attrs = &entry.attrs;
         let mapping = &config.ldap.member_mapping;
         Member {
-            username: string_or_empty(&mapping.username, attrs)[0].to_string(),
+            username: string_or_blank(&mapping.username, attrs)[0].to_string(),
             full_username: entry.dn.to_string(),
-            first_name: string_or_empty(&mapping.first_name, attrs)[0].to_string(),
-            last_name: string_or_empty(&mapping.last_name, attrs)[0].to_string(),
-            common_name: string_or_empty(&mapping.common_name, attrs)[0].to_string(),
+            first_name: string_or_blank(&mapping.first_name, attrs)[0].to_string(),
+            last_name: string_or_blank(&mapping.last_name, attrs)[0].to_string(),
+            common_name: string_or_blank(&mapping.common_name, attrs)[0].to_string(),
             whatsapp: bool_or_false(&mapping.whatsapp, attrs),
-            joining: string_or_empty(&mapping.joining, attrs)[0]
+            joining: string_or_blank(&mapping.joining, attrs)[0]
                 .parse::<u32>()
                 .unwrap_or(0),
             listed: bool_or_false(&mapping.listed, attrs),
             official: bool_or_false(&mapping.official, attrs),
-            gender: string_or_empty(&mapping.gender, attrs)[0]
+            gender: string_or_blank(&mapping.gender, attrs)[0]
                 .chars()
                 .next()
                 .unwrap_or('u'),
             active: bool_or_false(&mapping.active, attrs),
             mobile: string_or_empty(&mapping.mobile, attrs),
-            birthday: string_or_empty(&mapping.birthday, attrs)[0].to_string(),
+            birthday: string_or_blank(&mapping.birthday, attrs)[0].to_string(),
             mail: string_or_empty(&mapping.mail, attrs),
             photo: entry
                 .bin_attrs
@@ -350,6 +359,7 @@ impl LdapDeserializable<Member> for Member {
                 .next()
                 .unwrap_or(&vec![])
                 .to_owned(),
+            titles: string_or_empty(&mapping.titles, attrs),
             address: Address::from_search_entry(entry, config),
         }
     }
@@ -373,12 +383,12 @@ impl LdapDeserializable<Option<Address>> for Address {
             return None;
         }
         Some(Address {
-            street: string_or_empty(&mapping.street, attrs)[0].to_string(),
-            house_number: string_or_empty(&mapping.house_number, attrs)[0].to_string(),
-            postal_code: string_or_empty(&mapping.postal_code, attrs)[0].to_string(),
-            city: string_or_empty(&mapping.city, attrs)[0].to_string(),
-            state: string_or_empty(&mapping.state, attrs)[0].to_string(),
-            country_code: string_or_empty(&mapping.country_code, attrs)[0].to_string(),
+            street: string_or_blank(&mapping.street, attrs)[0].to_string(),
+            house_number: string_or_blank(&mapping.house_number, attrs)[0].to_string(),
+            postal_code: string_or_blank(&mapping.postal_code, attrs)[0].to_string(),
+            city: string_or_blank(&mapping.city, attrs)[0].to_string(),
+            state: string_or_blank(&mapping.state, attrs)[0].to_string(),
+            country_code: string_or_blank(&mapping.country_code, attrs)[0].to_string(),
         })
     }
 }
@@ -388,9 +398,9 @@ impl LdapDeserializable<Group> for Group {
         let attrs = &entry.attrs;
         let mapping = &config.ldap.group_mapping;
         Group {
-            name: string_or_empty(&mapping.name, attrs)[0].to_string(),
-            name_plural: string_or_empty(&mapping.name_plural, attrs)[0].to_string(),
-            description: string_or_empty(&mapping.description, attrs)[0].to_string(),
+            name: string_or_blank(&mapping.name, attrs)[0].to_string(),
+            name_plural: string_or_blank(&mapping.name_plural, attrs)[0].to_string(),
+            description: string_or_blank(&mapping.description, attrs)[0].to_string(),
             members: attrs
                 .get(mapping.members.as_str())
                 .unwrap_or(&vec![])
@@ -417,11 +427,21 @@ impl Ord for Group {
 ///
 /// * `attribute` : the attribute whose value should be extracted from the map
 /// * `attrs` : the map of the attributes with the corresponding values
-fn string_or_empty(attribute: &String, attrs: &HashMap<String, Vec<String>>) -> Vec<String> {
+fn string_or_blank(attribute: &String, attrs: &HashMap<String, Vec<String>>) -> Vec<String> {
     attrs
         .get(attribute)
         .unwrap_or(&vec!["".to_string()])
         .clone()
+}
+
+/// Extract either the strings out of a vector map or return an empty one if the attribute does not exist.
+///
+/// # Arguments
+///
+/// * `attribute` : the attribute whose value should be extracted from the map
+/// * `attrs` : the map of the attributes with the corresponding values
+fn string_or_empty(attribute: &String, attrs: &HashMap<String, Vec<String>>) -> Vec<String> {
+    attrs.get(attribute).unwrap_or(&vec![]).clone()
 }
 
 /// Extract the first value of the attribute map or return `false` if none exist

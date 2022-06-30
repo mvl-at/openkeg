@@ -99,6 +99,7 @@ pub struct MemberMapping {
     pub mobile: String,
     pub birthday: String,
     pub mail: String,
+    pub titles: String,
     pub photo: String,
 }
 
@@ -119,6 +120,7 @@ impl Default for MemberMapping {
             mobile: "mobile".to_string(),
             birthday: "birthday".to_string(),
             mail: "mail".to_string(),
+            titles: "title".to_string(),
             photo: "jpegPhoto".to_string(),
         }
     }
