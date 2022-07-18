@@ -26,6 +26,7 @@ pub struct Config {
     pub ldap: LdapConfig,
     pub jwt: JwtConfig,
     pub cert: CertConfig,
+    pub database: DatabaseConfig,
 }
 
 impl Default for Config {
@@ -34,6 +35,7 @@ impl Default for Config {
             ldap: Default::default(),
             jwt: Default::default(),
             cert: Default::default(),
+            database: Default::default(),
         }
     }
 }
@@ -76,9 +78,9 @@ impl Default for LdapConfig {
             register_filter: "(objectClass=*)".to_string(),
             executives_base: "".to_string(),
             executives_filter: "(objectClass=*)".to_string(),
-            member_mapping: MemberMapping::default(),
-            address_mapping: AddressMapping::default(),
-            group_mapping: GroupMapping::default(),
+            member_mapping: Default::default(),
+            address_mapping: Default::default(),
+            group_mapping: Default::default(),
         }
     }
 }
@@ -201,6 +203,46 @@ impl Default for CertConfig {
         Self {
             private_key_path: "keg-private-key.der".to_string(),
             public_key_path: "keg-public-key.der".to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DatabaseConfig {
+    /// The base url to the CouchDB Rest interface
+    pub url: String,
+    /// The username of the CouchDB user
+    pub username: String,
+    /// The password of the CouchDB user
+    pub password: String,
+    /// The database url mappings
+    pub database_mapping: DatabaseMapping,
+}
+
+impl Default for DatabaseConfig {
+    fn default() -> Self {
+        Self {
+            url: "".to_string(),
+            username: "".to_string(),
+            password: "".to_string(),
+            database_mapping: Default::default(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DatabaseMapping {
+    /// The endpoint used for authentication
+    pub authentication: String,
+    /// The endpoint which returns all scores which are available, requires the ability of sorting
+    pub all_scores: String,
+}
+
+impl Default for DatabaseMapping {
+    fn default() -> Self {
+        Self {
+            authentication: "/_session".to_string(),
+            all_scores: "".to_string(),
         }
     }
 }

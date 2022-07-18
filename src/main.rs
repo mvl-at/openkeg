@@ -23,6 +23,7 @@ use std::sync::Arc;
 use figment::Figment;
 use ldap3::tokio::task;
 use okapi::openapi3::OpenApi;
+use reqwest::Client;
 use rocket::fairing::AdHoc;
 use rocket::tokio::sync::RwLock;
 use rocket::{Build, Rocket};
@@ -31,6 +32,7 @@ use rocket_okapi::{mount_endpoints_and_merged_docs, swagger_ui::*};
 
 use crate::config::Config;
 use crate::cors::CORS;
+use crate::database::initialize_client;
 use crate::ldap::auth;
 use crate::ldap::sync::member_synchronization_task;
 use crate::members::state::MemberState;
@@ -39,11 +41,15 @@ use crate::user::key::{read_private_key, read_public_key};
 mod archive;
 mod config;
 mod cors;
+mod database;
 mod errors;
 mod ldap;
 mod members;
 mod schema_util;
 mod user;
+
+pub type MemberStateMutex = Arc<RwLock<MemberState>>;
+pub type DatabaseClient = Client;
 
 #[rocket::main]
 async fn main() {
@@ -56,14 +62,14 @@ async fn main() {
     let member_state = MemberState::mutex();
     let mut server_result = create_server(figment).manage(member_state);
     server_result = manage_keys(server_result).attach(CORS);
+    let config = server_result.figment().extract::<Config>().expect("config");
+    server_result = server_result.manage(initialize_client(&config).await);
     register_user_sync_task(&server_result);
     match server_result.launch().await {
         Ok(_) => info!("shutdown keg!"),
         Err(err) => error!("failed to start: {}", err.to_string()),
     }
 }
-
-pub type MemberStateMutex = Arc<RwLock<MemberState>>;
 
 fn create_server(figment: Figment) -> Rocket<Build> {
     let custom_route_spec = (vec![], custom_openapi_spec());
