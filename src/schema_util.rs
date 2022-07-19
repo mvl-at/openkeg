@@ -25,25 +25,20 @@ pub trait SchemaExample {
 
 /// A page for pagination which is used for huge collections as the score archive.
 #[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(crate = "rocket::serde", rename_all = "camelCase")]
+#[serde(crate = "rocket::serde")]
 #[schemars(example = "Self::example", title = "ResultPage")]
 pub struct Page<D>
 where
     D: Serialize + JsonSchema + SchemaExample,
 {
-    /// The maximum amount of items returned per page.
-    /// Normally taken from the original request.
-    pub limit: u64,
     /// The size of the results vector.
-    pub size: u64,
+    pub total_rows: u64,
     /// The offset where to begin to query.
     /// Starts with 0.
     pub offset: u64,
-    /// The total amount of items contained in the whole collection.
-    pub total: u64,
     /// The actual results.
-    /// Will be empty when `offset >= length`.
-    pub results: Vec<D>,
+    /// Will be empty when `offset >= total_rows`.
+    pub rows: Vec<D>,
 }
 
 impl<D> SchemaExample for Page<D>
@@ -52,11 +47,38 @@ where
 {
     fn example() -> Self {
         Self {
-            limit: 20,
-            size: 0,
+            total_rows: 150,
             offset: 150,
-            total: 150,
-            results: vec![],
+            rows: vec![],
+        }
+    }
+}
+
+/// A page for pagination which is used for huge collections as the score archive.
+#[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(crate = "rocket::serde")]
+#[schemars(example = "Self::example", title = "ResultRow")]
+pub struct Row<D>
+where
+    D: Serialize + JsonSchema + SchemaExample,
+{
+    /// The emitted id of the row
+    pub id: String,
+    /// The emitted key of the row
+    pub key: String,
+    /// The actual document of this row
+    pub doc: D,
+}
+
+impl<D> SchemaExample for Row<D>
+where
+    D: Serialize + JsonSchema + SchemaExample,
+{
+    fn example() -> Self {
+        Self {
+            id: "score:289j9f84".to_string(),
+            key: "score:289j9f84".to_string(),
+            doc: SchemaExample::example(),
         }
     }
 }
