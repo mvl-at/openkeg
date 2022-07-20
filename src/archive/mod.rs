@@ -20,6 +20,7 @@ use rocket_okapi::openapi_get_routes_spec;
 use rocket_okapi::settings::OpenApiSettings;
 
 pub mod controller;
+pub mod database;
 pub mod model;
 
 pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {

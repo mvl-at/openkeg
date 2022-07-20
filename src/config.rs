@@ -215,6 +215,8 @@ pub struct DatabaseConfig {
     pub username: String,
     /// The password of the CouchDB user
     pub password: String,
+    /// The score partition prefix
+    pub score_partition: String,
     /// The database url mappings
     pub database_mapping: DatabaseMapping,
 }
@@ -225,6 +227,7 @@ impl Default for DatabaseConfig {
             url: "".to_string(),
             username: "".to_string(),
             password: "".to_string(),
+            score_partition: "score".to_string(),
             database_mapping: Default::default(),
         }
     }
