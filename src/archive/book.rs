@@ -15,24 +15,17 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-use okapi::openapi3::OpenApi;
-use rocket_okapi::openapi_get_routes_spec;
-use rocket_okapi::settings::OpenApiSettings;
+use rocket::serde::json::Json;
+use rocket_okapi::openapi;
 
-pub mod book;
-pub mod database;
-pub mod model;
-pub mod score;
+use crate::archive::database::Pagination;
+use crate::archive::model::Score;
+use crate::errors::Result;
+use crate::schema_util::SchemaExample;
 
-pub fn get_scores_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
-    openapi_get_routes_spec![
-        settings: score::get_score,
-        score::search_scores,
-        score::put_score,
-        score::delete_score,
-    ]
-}
-
-pub fn get_books_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
-    openapi_get_routes_spec![settings: book::get_book_content,]
+/// Return the scores of a book in the correct order by their page.
+#[openapi(tag = "Archive")]
+#[get("/<name>/content")]
+pub fn get_book_content(name: String) -> Result<Pagination<Score>> {
+    Ok(Json(SchemaExample::example()))
 }

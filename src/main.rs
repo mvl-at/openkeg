@@ -86,7 +86,8 @@ fn create_server(figment: Figment) -> Rocket<Build> {
     mount_endpoints_and_merged_docs! {
         rocket, "/api/v1".to_owned(), openapi_settings,
         "/" => custom_route_spec,
-        "/archive" => archive::get_routes_and_docs(&openapi_settings),
+        "/scores" => archive::get_scores_routes_and_docs(&openapi_settings),
+        "/books" => archive::get_books_routes_and_docs(&openapi_settings),
         "/members" => members::get_routes_and_docs(&openapi_settings),
         "/user" => user::get_routes_and_docs(&openapi_settings),
     };

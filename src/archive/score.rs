@@ -22,7 +22,7 @@ use rocket_okapi::openapi;
 
 use crate::archive::database::score::all_scores;
 use crate::archive::database::Pagination;
-use crate::archive::model::{Page, Score};
+use crate::archive::model::Score;
 use crate::errors::Result;
 use crate::schema_util::SchemaExample;
 use crate::Config;
@@ -30,7 +30,7 @@ use crate::Config;
 /// Search for scores which fulfil the passed parameters.
 /// The parameters specify the value itself, the fields to search for and the ordering.
 #[openapi(tag = "Archive")]
-#[get("/score?<limit>&<skip>")]
+#[get("/?<limit>&<skip>")]
 pub async fn search_scores(
     limit: u64,
     skip: u64,
@@ -42,28 +42,21 @@ pub async fn search_scores(
 
 /// Return a single score.
 #[openapi(tag = "Archive")]
-#[get("/score/<id>")]
+#[get("/<id>")]
 pub fn get_score(id: i64) -> Result<Score> {
     Ok(Json(Score::example()))
 }
 
 /// Create or update a score.
 #[openapi(tag = "Archive")]
-#[put("/score", data = "<score>")]
+#[put("/", data = "<score>")]
 pub fn put_score(score: Json<Score>, conf: &State<Config>) -> Result<Score> {
     Ok(Json(Score::example()))
 }
 
 /// Delete a score by its id.
 #[openapi(tag = "Archive")]
-#[delete("/score/<id>")]
+#[delete("/<id>")]
 pub fn delete_score(id: i64) -> Result<()> {
     Ok(Json(()))
-}
-
-/// Return the pages of a book in the correct order by their id.
-#[openapi(tag = "Archive")]
-#[get("/book/<id>/content")]
-pub fn get_book_content(id: i64) -> Result<Vec<Page>> {
-    Ok(Json(vec![Page::example()]))
 }
