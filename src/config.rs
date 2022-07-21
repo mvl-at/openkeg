@@ -227,7 +227,7 @@ impl Default for DatabaseConfig {
             url: "".to_string(),
             username: "".to_string(),
             password: "".to_string(),
-            score_partition: "score".to_string(),
+            score_partition: "scores".to_string(),
             database_mapping: Default::default(),
         }
     }
