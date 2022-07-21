@@ -23,6 +23,8 @@ use serde::{Deserialize, Serialize};
 use crate::errors::Error;
 use crate::Config;
 
+mod score;
+
 #[derive(Deserialize)]
 struct CouchError {
     error: String,
@@ -54,16 +56,16 @@ fn request_error<T>() -> Result<T, Error> {
 ///
 /// * `conf`: the application configuration
 /// * `client`: the client to use for the database request, likely is required to be authenticated with a cookie
-/// * `request`: the [`RequestBuilder`] used to build the request, should already contain information such as the body
+/// * `request_hook`: a function used to modify the request, can be used to insert information such as the body
 /// * `method`: the `HTTP` method used for the request - replaces the current one
 /// * `api_url`: the `URL` relative to the base `URL` of the database
 /// * `parameters`: the query parameters being used for the request
 ///
 /// returns: Result<R, Error>
-async fn request<R, P>(
+async fn request<'a, R, P>(
     conf: &Config,
     client: &Client,
-    request: RequestBuilder,
+    request_hook: Box<dyn FnOnce(RequestBuilder) -> RequestBuilder + 'a>,
     method: Method,
     api_url: &String,
     parameters: &P,
@@ -82,7 +84,10 @@ where
         );
         return request_error();
     }
-    let request_result = request.query(parameters).build();
+    let request = client
+        .request(method, url_result.unwrap())
+        .query(parameters);
+    let request_result = request_hook(request).build();
     if request_result.is_err() {
         warn!(
             "Unable to build the request provided by the application: {}",
@@ -90,8 +95,7 @@ where
         );
         return request_error();
     }
-    let mut request_success = request_result.unwrap();
-    (*request_success.method_mut()) = method;
+    let request_success = request_result.unwrap();
     let response_result = client.execute(request_success).await;
     if response_result.is_err() {
         warn!(
