@@ -148,9 +148,9 @@ where
         );
         return request_error();
     }
-    let request = client
-        .request(method, url_result.unwrap())
-        .query(parameters);
+    let request_url = url_result.unwrap();
+    debug!("The request URL is: {}", request_url);
+    let request = client.request(method, request_url).query(parameters);
     let request_result = request_hook(request).build();
     if request_result.is_err() {
         warn!(
