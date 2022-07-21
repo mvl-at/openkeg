@@ -1,0 +1,28 @@
+[default.ldap]
+server = "ldap://localhost:2389"
+dn = "uid=koal,ou=Musik,ou=Mitglieder,dc=mvl,dc=at"
+member_base = "ou=Mitglieder,dc=mvl,dc=at"
+member_filter = "(objectClass=mvlMember)"
+sutler_base = "ou=Marketenderinnen,ou=Mitglieder,dc=mvl,dc=at"
+sutler_filter = "(objectClass=mvlMember)"
+honorary_base = "ou=Ehrenmitglieder,ou=Mitglieder,dc=mvl,dc=at"
+honorary_filter = "(objectClass=mvlMember)"
+register_base = "ou=Register,ou=Divisionen,dc=mvl,dc=at"
+register_filter = "(objectClass=mvlGroup)"
+executives_base = "ou=Exekutive,ou=Divisionen,dc=mvl,dc=at"
+executives_filter = "(objectClass=mvlGroup)"
+password = "Ibimsdastaschasserkoal"
+
+[default.database]
+url = "http://127.0.0.1:5984"
+username = "admin"
+password = "admin"
+score_partition = "scores"
+
+[default.database.database_mapping]
+authentication = "/_session"
+all_scores = "/archive/_partition/scores/_all_docs"
+genres_statistic = "/archive/_design/score/_view/genres-count"
+composers_statistic = "/archive/_design/score/_view/composers-count"
+arrangers_statistic = "/archive/_design/score/_view/arrangers-count"
+publishers_statistic = "/archive/_design/score/_view/publishers-count"

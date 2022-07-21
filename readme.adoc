@@ -39,6 +39,22 @@ openssl rsa -in keg-private-key.der -pubout -inform DER -outform DER -out keg-pu
 
 TIP: You may want to delete the `keg-private-key.pem` afterwards.
 
+== Configuration
+
+You may copy the example configuration and change the parameters as required.
+Note that the configuration contains sensitive data such as the passwords to the directory or the database servers.
+This means that you should change the permissions to the configuration file such that only the user who runs application can read it.
+
+As an alternative you might want to only omit these sensitive attributes and provide them as environment variables as described in the https://rocket.rs/v0.5-rc/guide/upgrading/#configuration[Rocket Configuration Section].
+The difference is that in this application, the prefix is `KEG_` instead of `ROCKET_`.
+This is especially useful for container environments as in kubernetes or docker.
+
+.The example configuration
+[source,toml]
+----
+include::keg.example.toml[]
+----
+
 == Development
 
 In order to use the pre-commit hook for formatting the code before every commit, just run `make` in the project root once.
