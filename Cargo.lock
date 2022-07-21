@@ -798,7 +798,7 @@ dependencies = [
 
 [[package]]
 name = "keg"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "base64 0.20.0-alpha.1",
  "chrono",
