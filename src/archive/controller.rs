@@ -15,21 +15,29 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+use reqwest::Client;
 use rocket::serde::json::Json;
 use rocket::State;
 use rocket_okapi::openapi;
 
-use crate::archive::model::{Page, Score, ScoreSearchParameters};
+use crate::archive::database::score::all_scores;
+use crate::archive::database::Pagination;
+use crate::archive::model::{Page, Score};
 use crate::errors::Result;
 use crate::schema_util::SchemaExample;
-use crate::{schema_util, Config};
+use crate::Config;
 
 /// Search for scores which fulfil the passed parameters.
 /// The parameters specify the value itself, the fields to search for and the ordering.
 #[openapi(tag = "Archive")]
-#[get("/score?<params..>")]
-pub fn search_scores(params: ScoreSearchParameters) -> Result<schema_util::Page<Score>> {
-    Ok(Json(schema_util::Page::example()))
+#[get("/score?<limit>&<skip>")]
+pub async fn search_scores(
+    limit: u64,
+    skip: u64,
+    conf: &State<Config>,
+    client: &State<Client>,
+) -> Result<Pagination<Score>> {
+    all_scores(conf, client, limit, skip).await
 }
 
 /// Return a single score.
@@ -42,7 +50,7 @@ pub fn get_score(id: i64) -> Result<Score> {
 /// Create or update a score.
 #[openapi(tag = "Archive")]
 #[put("/score", data = "<score>")]
-pub fn put_score(mut score: Json<Score>, conf: &State<Config>) -> Result<Score> {
+pub fn put_score(score: Json<Score>, conf: &State<Config>) -> Result<Score> {
     Ok(Json(Score::example()))
 }
 

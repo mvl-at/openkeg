@@ -17,13 +17,75 @@
 
 use reqwest::{Client, Method, RequestBuilder, StatusCode, Url};
 use rocket::http::Status;
+use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
 use crate::errors::Error;
+use crate::schema_util::SchemaExample;
 use crate::Config;
 
-mod score;
+pub mod score;
+
+/// A page for pagination which is used for huge collections as the score archive.
+#[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(crate = "rocket::serde")]
+#[schemars(example = "Self::example")]
+pub struct Pagination<D>
+where
+    D: Serialize + JsonSchema + SchemaExample,
+{
+    /// The size of the results vector.
+    pub total_rows: u64,
+    /// The offset where to begin to query.
+    /// Starts with 0.
+    pub offset: u64,
+    /// The actual results.
+    /// Will be empty when `offset >= total_rows`.
+    pub rows: Vec<PaginationRow<D>>,
+}
+
+impl<D> SchemaExample for Pagination<D>
+where
+    D: Serialize + JsonSchema + SchemaExample,
+{
+    fn example() -> Self {
+        Self {
+            total_rows: 150,
+            offset: 150,
+            rows: vec![],
+        }
+    }
+}
+
+/// A page for pagination which is used for huge collections as the score archive.
+#[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(crate = "rocket::serde")]
+#[schemars(example = "Self::example")]
+pub struct PaginationRow<D>
+where
+    D: Serialize + JsonSchema + SchemaExample,
+{
+    /// The emitted id of the row
+    pub id: String,
+    /// The emitted key of the row
+    pub key: String,
+    /// The actual document of this row
+    pub doc: D,
+}
+
+impl<D> SchemaExample for PaginationRow<D>
+where
+    D: Serialize + JsonSchema + SchemaExample,
+{
+    fn example() -> Self {
+        Self {
+            id: "score:289j9f84".to_string(),
+            key: "score:289j9f84".to_string(),
+            doc: SchemaExample::example(),
+        }
+    }
+}
 
 #[derive(Deserialize)]
 struct CouchError {
@@ -65,7 +127,7 @@ fn request_error<T>() -> Result<T, Error> {
 async fn request<'a, R, P>(
     conf: &Config,
     client: &Client,
-    request_hook: Box<dyn FnOnce(RequestBuilder) -> RequestBuilder + 'a>,
+    request_hook: Box<dyn FnOnce(RequestBuilder) -> RequestBuilder + Send + 'a>,
     method: Method,
     api_url: &String,
     parameters: &P,

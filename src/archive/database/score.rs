@@ -15,7 +15,34 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-/// Trait for adds examples to API documentation
-pub trait SchemaExample {
-    fn example() -> Self;
+use std::collections::HashMap;
+
+use reqwest::{Client, Method};
+use rocket::serde::json::Json;
+
+use crate::archive::database::{request, Pagination};
+use crate::archive::model::Score;
+use crate::errors::Result;
+use crate::Config;
+
+pub async fn all_scores(
+    conf: &Config,
+    client: &Client,
+    limit: u64,
+    skip: u64,
+) -> Result<Pagination<Score>> {
+    let mut parameters = HashMap::new();
+    parameters.insert("include_docs".to_string(), "true".to_string());
+    parameters.insert("limit".to_string(), limit.to_string());
+    parameters.insert("skip".to_string(), skip.to_string());
+    request(
+        conf,
+        client,
+        Box::new(|r| r),
+        Method::GET,
+        &conf.database.database_mapping.all_scores,
+        &parameters,
+    )
+    .await
+    .map(|r| Json(r))
 }
