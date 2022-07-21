@@ -27,6 +27,7 @@ use crate::schema_util::SchemaExample;
 use crate::Config;
 
 pub mod score;
+pub mod statistic;
 
 /// A page for pagination which is used for huge collections as the score archive.
 #[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema)]

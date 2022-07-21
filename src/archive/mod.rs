@@ -23,6 +23,7 @@ pub mod book;
 pub mod database;
 pub mod model;
 pub mod score;
+mod statistic;
 
 pub fn get_scores_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
     openapi_get_routes_spec![
@@ -35,4 +36,8 @@ pub fn get_scores_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Ro
 
 pub fn get_books_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
     openapi_get_routes_spec![settings: book::get_book_content,]
+}
+
+pub fn get_statistics_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
+    openapi_get_routes_spec![settings: statistic::get_count_statistic,]
 }

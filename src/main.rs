@@ -88,6 +88,7 @@ fn create_server(figment: Figment) -> Rocket<Build> {
         "/" => custom_route_spec,
         "/scores" => archive::get_scores_routes_and_docs(&openapi_settings),
         "/books" => archive::get_books_routes_and_docs(&openapi_settings),
+        "/statistics" => archive::get_statistics_routes_and_docs(&openapi_settings),
         "/members" => members::get_routes_and_docs(&openapi_settings),
         "/user" => user::get_routes_and_docs(&openapi_settings),
     };

@@ -157,6 +157,25 @@ pub enum ScoreSearchParameter {
     Publisher,
 }
 
+pub type CountStatistic = Statistic<String, u64>;
+
+/// A statistic from the database.
+/// Typically the result of reduced design documents.
+#[derive(JsonSchema, Serialize, Deserialize, Debug)]
+pub struct Statistic<K, V> {
+    /// The rows of the statistic.
+    pub rows: Vec<StatisticEntry<K, V>>,
+}
+
+/// A single statistic entry which may contain information such as a count as a value for an string id.
+#[derive(JsonSchema, Serialize, Deserialize, Debug)]
+pub struct StatisticEntry<K, V> {
+    /// The key of this statistic entry.
+    pub key: K,
+    /// The value of this statistic entry.
+    pub value: V,
+}
+
 impl SchemaExample for Score {
     #[allow(deprecated)]
     fn example() -> Self {
