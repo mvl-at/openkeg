@@ -45,7 +45,9 @@ pub async fn initialize_client(conf: &Config) -> DatabaseClient {
         panic!();
     }
     let client = client_result.unwrap();
-    authenticate(conf, &client).await;
+    authenticate(conf, &client)
+        .await
+        .expect("authenticated client");
     client
 }
 
@@ -73,7 +75,7 @@ impl Credentials {
 /// * `client`: the HTTP client to use, cookie support is required
 ///
 /// returns: ()
-async fn authenticate(conf: &Config, client: &Client) {
+pub(crate) async fn authenticate(conf: &Config, client: &Client) -> Result<(), ()> {
     let url_result = Url::parse(&*format!(
         "{}{}",
         conf.database.url, conf.database.database_mapping.authentication
@@ -83,7 +85,7 @@ async fn authenticate(conf: &Config, client: &Client) {
             "unable to parse the authentication url: {}",
             url_result.err().unwrap()
         );
-        return;
+        return Err(());
     }
     let request_result = client
         .post(url_result.unwrap())
@@ -94,7 +96,7 @@ async fn authenticate(conf: &Config, client: &Client) {
             "unable to build the authentication request: {}",
             request_result.err().unwrap()
         );
-        return;
+        return Err(());
     }
     let response_result = client.execute(request_result.unwrap()).await;
     if response_result.is_err() {
@@ -102,7 +104,7 @@ async fn authenticate(conf: &Config, client: &Client) {
             "unable to execute authentication request: {}",
             response_result.err().unwrap()
         );
-        return;
+        return Err(());
     }
     let response = response_result.unwrap();
     if response.status().is_client_error() || response.status().is_server_error() {
@@ -110,7 +112,9 @@ async fn authenticate(conf: &Config, client: &Client) {
             "unable to authenticate, the server returned: {}",
             response.status()
         );
+        Err(())
     } else {
         info!("authentication to the database interface was successful");
+        Ok(())
     }
 }

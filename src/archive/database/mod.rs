@@ -21,6 +21,7 @@ use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
+use crate::database::authenticate;
 use crate::errors::Error;
 use crate::schema_util::SchemaExample;
 use crate::Config;
@@ -158,6 +159,7 @@ where
         return request_error();
     }
     let request_success = request_result.unwrap();
+    let request_clone_optional = request_success.try_clone();
     let response_result = client.execute(request_success).await;
     if response_result.is_err() {
         warn!(
@@ -166,8 +168,40 @@ where
         );
         return request_error();
     }
-    let response = response_result.unwrap();
-    let status = response.status();
+    let mut response = response_result.unwrap();
+    let mut status = response.status();
+    if status == StatusCode::UNAUTHORIZED {
+        info!("The session cookie seems to be expired, try to reauthenticate");
+        let auth_result = authenticate(conf, client).await;
+        if auth_result.is_err() {
+            return Err(Error {
+                err: "Database Error".to_string(),
+                msg: Some(
+                    "Cannot connect to the database, please contact the administrator".to_string(),
+                ),
+                http_status_code: Status::InternalServerError.code,
+            });
+        }
+        if request_clone_optional.is_none() {
+            return Err(Error {
+                err: "Database Error".to_string(),
+                msg: Some(
+                    "Unable to reproduce the request, you may try again immediately".to_string(),
+                ),
+                http_status_code: Status::ServiceUnavailable.code,
+            });
+        }
+        let response_clone_result = client.execute(request_clone_optional.unwrap()).await;
+        if response_clone_result.is_err() {
+            warn!(
+                "Unable to execute the second request provided by the application: {}",
+                response_clone_result.err().unwrap()
+            );
+            return request_error();
+        }
+        response = response_clone_result.unwrap();
+        status = response.status();
+    }
     if !status.is_success() {
         let result = response.json::<CouchError>().await;
         if result.is_err() {
