@@ -1,5 +1,5 @@
 [package]
-name = "keg"
+name = "openkeg"
 version = "0.1.2"
 edition = "2021"
 authors = ["Richard Stöckl"]

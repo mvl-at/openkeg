@@ -1,8 +1,4 @@
-use ldap3::{Ldap, LdapConnAsync, LdapError, Scope, SearchEntry};
-
-use crate::Config;
-
-// Keg, the lightweight backend of the Musikverein Leopoldsdorf.
+// OpenKeg, the lightweight backend of the Musikverein Leopoldsdorf.
 // Copyright (C) 2022  Richard Stöckl
 //
 // This program is free software; you can redistribute it and/or
@@ -20,6 +16,9 @@ use crate::Config;
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 pub mod auth;
 pub mod sync;
+
+use crate::Config;
+use ldap3::{Ldap, LdapConnAsync, LdapError, Scope, SearchEntry};
 
 /// A trait which ensures the deserialization capability of a struct.
 pub trait LdapDeserializable<T> {
@@ -55,7 +54,7 @@ where
     let ldap_result = open_session(config).await;
     if ldap_result.is_err() {
         error!("failed to connect to the auth server");
-        return Result::Err(LdapError::EndOfStream);
+        return Err(LdapError::EndOfStream);
     }
     let mut ldap = ldap_result.unwrap();
     let search_result = ldap

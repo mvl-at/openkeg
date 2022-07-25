@@ -1,4 +1,4 @@
-// Keg, the lightweight backend of the Musikverein Leopoldsdorf.
+// OpenKeg, the lightweight backend of the Musikverein Leopoldsdorf.
 // Copyright (C) 2022  Richard Stöckl
 //
 // This program is free software; you can redistribute it and/or
@@ -55,7 +55,7 @@ pub type DatabaseClient = Client;
 async fn main() {
     env_logger::init();
     info!(
-        "Welcome to Keg {} - the backend of the Musikverein Leopoldsdorf!",
+        "Welcome to OpenKeg {} - The backend of the Musikverein Leopoldsdorf!",
         env!("CARGO_PKG_VERSION")
     );
     let figment = config::read_config();
@@ -66,7 +66,7 @@ async fn main() {
     server_result = server_result.manage(initialize_client(&config).await);
     register_user_sync_task(&server_result);
     match server_result.launch().await {
-        Ok(_) => info!("shutdown keg!"),
+        Ok(_) => info!("Shutdown OpenKeg!"),
         Err(err) => error!("failed to start: {}", err.to_string()),
     }
 }
@@ -154,14 +154,14 @@ fn custom_openapi_spec() -> OpenApi {
     OpenApi {
         openapi: OpenApi::default_version(),
         info: Info {
-            title: "Keg".to_owned(),
+            title: "OpenKeg".to_owned(),
             description: Some("The backend API for the Musikverein Leopoldsdorf!".to_owned()),
             terms_of_service: Some(
                 "https://github.com/mvl-at/keg/blob/master/license.adoc".to_owned(),
             ),
             contact: Some(Contact {
                 name: Some("Richard Stöckl".to_owned()),
-                url: Some("https://github.com/mvl-at/keg".to_owned()),
+                url: Some("https://github.com/mvl-at/openkeg".to_owned()),
                 email: Some("richard.stoeckl@aon.at".to_owned()),
                 ..Default::default()
             }),

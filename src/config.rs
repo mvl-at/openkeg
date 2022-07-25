@@ -1,4 +1,4 @@
-// Keg, the lightweight backend of the Musikverein Leopoldsdorf.
+// OpenKeg, the lightweight backend of the Musikverein Leopoldsdorf.
 // Copyright (C) 2022  Richard Stöckl
 //
 // This program is free software; you can redistribute it and/or
@@ -176,7 +176,7 @@ pub struct JwtConfig {
     pub expiration: i64,
     /// The expiration of the refresh tokens given in *hours*.
     pub renewal_expiration: i64,
-    /// The issuer used for token genertion
+    /// The issuer used for token generation
     pub issuer: String,
 }
 

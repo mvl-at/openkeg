@@ -1,4 +1,4 @@
-= Keg
+= OpenKeg: The Lightweight Backend of the Musikverein Leopoldsdorf
 Richard Stöckl <richard.stoeckl@aon.at>
 
 :icons: font
@@ -9,7 +9,7 @@ ifdef::env-github[]
 :note-caption: :information_source:
 endif::[]
 
-Keg -- the lightweight backend of the Musikverein Leopoldsdorf.
+This backend especially written for the Musikverein Leopoldsdorf, provides the functionality to authenticate against a directory server, provides a REST access to them and provide a REST interface to the archive.
 
 == Build
 
@@ -59,3 +59,7 @@ include::keg.example.toml[]
 
 In order to use the pre-commit hook for formatting the code before every commit, just run `make` in the project root once.
 
+== Name Origin
+
+As in many music societies, the consumption of kegs is common in the Musikverein Leopoldsdorf.
+This makes them mandatory to be open -- a prefix which is also used for many open source projects.

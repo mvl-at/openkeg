@@ -797,28 +797,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "keg"
-version = "0.1.2"
-dependencies = [
- "base64 0.20.0-alpha.1",
- "chrono",
- "env_logger",
- "figment",
- "futures",
- "jsonwebtoken",
- "ldap3",
- "log",
- "okapi",
- "reqwest",
- "rocket",
- "rocket_okapi",
- "schemars",
- "serde",
- "serde_json",
- "uuid",
-]
-
-[[package]]
 name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1054,6 +1032,28 @@ name = "opaque-debug"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
+
+[[package]]
+name = "openkeg"
+version = "0.1.2"
+dependencies = [
+ "base64 0.20.0-alpha.1",
+ "chrono",
+ "env_logger",
+ "figment",
+ "futures",
+ "jsonwebtoken",
+ "ldap3",
+ "log",
+ "okapi",
+ "reqwest",
+ "rocket",
+ "rocket_okapi",
+ "schemars",
+ "serde",
+ "serde_json",
+ "uuid",
+]
 
 [[package]]
 name = "openssl"

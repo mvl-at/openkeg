@@ -1,4 +1,4 @@
-// Keg, the lightweight backend of the Musikverein Leopoldsdorf.
+// OpenKeg, the lightweight backend of the Musikverein Leopoldsdorf.
 // Copyright (C) 2022  Richard Stöckl
 //
 // This program is free software; you can redistribute it and/or
