@@ -27,7 +27,8 @@ mod statistic;
 
 pub fn get_scores_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
     openapi_get_routes_spec![
-        settings: score::get_score,
+        settings: score::get_scores,
+        score::get_score,
         score::search_scores,
         score::put_score,
         score::delete_score,

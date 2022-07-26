@@ -21,23 +21,65 @@ use rocket::State;
 use rocket_okapi::openapi;
 
 use crate::archive::database::score::all_scores;
-use crate::archive::database::Pagination;
-use crate::archive::model::Score;
+use crate::archive::database::{FindResponse, Pagination};
+use crate::archive::model::{Score, ScoreSearchTermField};
 use crate::errors::Result;
 use crate::schema_util::SchemaExample;
 use crate::Config;
 
-/// Search for scores which fulfil the passed parameters.
+/// Get all scores from the database with pagination.
 /// The parameters specify the value itself, the fields to search for and the ordering.
 #[openapi(tag = "Archive")]
 #[get("/?<limit>&<skip>")]
-pub async fn search_scores(
+pub async fn get_scores(
     limit: u64,
     skip: u64,
     conf: &State<Config>,
     client: &State<Client>,
 ) -> Result<Pagination<Score>> {
     all_scores(conf, client, limit, skip).await
+}
+
+/// A request for searching scores in the database.
+///
+/// # Paginating
+///
+/// This request supports paginating in a quite inconvenient way:
+/// One can only specify the [limit], the offset/skip can be only described by the [bookmark].
+/// The [bookmark] works such as an iterator but with anchors.
+/// E.g.: if `limit = 10` and `bookmark` is unset, the first 10 results will be shown.
+/// Within this response, the server will return a `bookmark` string.
+/// This string can be used in the next request in order to retrieve the next 10 results and so on.
+///
+/// # Arguments
+///
+/// * `search_term`: a string to search for in the specified [attributes]
+/// * `regex`: if `true` the [search_term] will be interpreted as a regular expression instead of a fuzzy search term
+/// * `attributes`: the attributes to search for
+/// * `book`: if set, the score must contain a page with exactly this book
+/// * `location`: if set, the score must be have set a location with exact this string
+/// * `sort`: the field which should be used to sort the results (database relative, not page)
+/// * `ascending`: is unset or `true` the results will be sorted ascending, descending otherwise
+/// * `limit`: the limit of documents for a result page
+/// * `bookmark`: the bookmark used for pagination
+///
+/// returns: Result<Json<FindResponse<Score>>, Error>
+#[openapi(tag = "Archive")]
+#[get(
+    "/searches?<search_term>&<regex>&<attributes>&<book>&<location>&<sort>&<ascending>&<limit>&<bookmark>"
+)]
+pub async fn search_scores(
+    search_term: Option<String>,
+    regex: Option<bool>,
+    attributes: Vec<ScoreSearchTermField>,
+    book: Option<String>,
+    location: Option<String>,
+    sort: Option<ScoreSearchTermField>,
+    ascending: Option<bool>,
+    limit: u64,
+    bookmark: Option<String>,
+) -> Result<FindResponse<Score>> {
+    unimplemented!()
 }
 
 /// Return a single score.

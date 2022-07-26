@@ -135,24 +135,23 @@ pub struct ScoreSearchParameters {
     /// The search term.
     pub term: String,
     /// The fields where to search.
-    pub fields: Vec<ScoreSearchParameter>,
+    pub fields: Vec<ScoreSearchTermField>,
     /// `true` if the results should be ordered ascending, `false` otherwise.
     pub ascending: Option<bool>,
     /// The field which specifies the ordering of the results.
-    pub order: Option<ScoreSearchParameter>,
+    pub order: Option<ScoreSearchTermField>,
 }
 
 /// Representation of a score field which can be used in a search.
 #[derive(Debug, Serialize, Deserialize, JsonSchema, FromFormField)]
 #[serde(crate = "rocket::serde", rename_all = "camelCase")]
 #[schemars(example = "Self::example")]
-pub enum ScoreSearchParameter {
+pub enum ScoreSearchTermField {
     Title,
     Genre,
-    SubTitle,
+    Subtitle,
     Arranger,
     Composer,
-    Annotation,
     Alias,
     Publisher,
 }
@@ -240,24 +239,8 @@ impl SchemaExample for Book {
     }
 }
 
-impl SchemaExample for ScoreSearchParameter {
+impl SchemaExample for ScoreSearchTermField {
     fn example() -> Self {
         Self::Title
-    }
-}
-
-impl ScoreSearchParameter {
-    fn to_database_field(&self) -> String {
-        match self {
-            ScoreSearchParameter::Title => "title",
-            ScoreSearchParameter::SubTitle => "subtitle",
-            ScoreSearchParameter::Alias => "alias",
-            ScoreSearchParameter::Publisher => "publisher",
-            ScoreSearchParameter::Annotation => "annotation",
-            ScoreSearchParameter::Composer => "composer",
-            ScoreSearchParameter::Arranger => "arranger",
-            ScoreSearchParameter::Genre => "genre",
-        }
-        .to_string()
     }
 }
