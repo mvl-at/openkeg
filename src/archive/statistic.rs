@@ -20,9 +20,9 @@ use rocket::serde::{Deserialize, Serialize};
 use rocket::State;
 use rocket_okapi::{openapi, JsonSchema};
 
+use crate::api_result::Result as JsonResult;
 use crate::archive::database::statistic::count_statistic;
 use crate::archive::model::CountStatistic;
-use crate::errors::Result as JsonResult;
 use crate::Config;
 
 /// Representation of a score field which can be used in a search.

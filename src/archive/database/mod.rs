@@ -21,8 +21,8 @@ use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
+use crate::api_result::Error;
 use crate::database::authenticate;
-use crate::errors::Error;
 use crate::schema_util::SchemaExample;
 use crate::Config;
 
@@ -159,6 +159,28 @@ impl CouchError {
             err: self.error,
             msg: Some(self.reason),
             http_status_code: status.as_u16(),
+        }
+    }
+}
+
+#[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(crate = "rocket::serde")]
+#[schemars(example = "Self::example")]
+pub struct OperationResponse {
+    /// The id of the deleted document.
+    pub id: String,
+    /// The status of the operation.
+    pub ok: bool,
+    /// The revision of the document of the operation context.
+    pub rev: String,
+}
+
+impl SchemaExample for OperationResponse {
+    fn example() -> Self {
+        Self {
+            id: "scores:s8eu".to_string(),
+            ok: true,
+            rev: "1-h98rgu".to_string(),
         }
     }
 }

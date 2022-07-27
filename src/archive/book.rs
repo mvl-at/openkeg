@@ -18,9 +18,9 @@
 use rocket::serde::json::Json;
 use rocket_okapi::openapi;
 
+use crate::api_result::Result;
 use crate::archive::database::Pagination;
 use crate::archive::model::Score;
-use crate::errors::Result;
 use crate::schema_util::SchemaExample;
 
 /// Return the scores of a book in the correct order by their page.

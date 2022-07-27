@@ -21,8 +21,8 @@ use rocket::serde::json::Json;
 use rocket::State;
 use rocket_okapi::openapi;
 
+use crate::api_result::{Error, Result};
 use crate::config::Config;
-use crate::errors::{Error, Result};
 use crate::ldap::sync::synchronize_members_and_groups;
 use crate::members::model::{Crew, Member, WebMember, WebRegister};
 use crate::members::photo::Photo;

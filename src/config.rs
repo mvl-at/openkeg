@@ -243,6 +243,8 @@ pub struct DatabaseMapping {
     pub find_scores: String,
     /// The endpoint to receive a single score by its id
     pub get_score: String,
+    /// The endpoint to delete a single score bty its id and revision
+    pub delete_score: String,
     /// The endpoint for the genres count statistic.
     pub genres_statistic: String,
     /// The endpoint for the composers count statistic.
@@ -260,6 +262,7 @@ impl Default for DatabaseMapping {
             all_scores: "".to_string(),
             find_scores: "".to_string(),
             get_score: "".to_string(),
+            delete_score: "".to_string(),
             genres_statistic: "".to_string(),
             composers_statistic: "".to_string(),
             arrangers_statistic: "".to_string(),

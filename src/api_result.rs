@@ -16,17 +16,22 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 use std::collections::HashMap;
+use std::result::Result as StdResult;
 
 use rocket::{
     http::{ContentType, Status},
     request::Request,
     response::{self, Responder, Response},
+    serde::json::Json,
 };
-use rocket_okapi::okapi::openapi3::Responses;
-use rocket_okapi::okapi::schemars::{self};
-use rocket_okapi::{gen::OpenApiGenerator, response::OpenApiResponderInner, OpenApiError};
+use rocket_okapi::{
+    gen::OpenApiGenerator,
+    okapi::{openapi3::Responses, schemars},
+    response::OpenApiResponderInner,
+    OpenApiError,
+};
 
-pub type Result<T> = std::result::Result<rocket::serde::json::Json<T>, Error>;
+pub type Result<T> = StdResult<Json<T>, Error>;
 
 fn http_code_descriptions() -> HashMap<&'static str, &'static str> {
     HashMap::from([

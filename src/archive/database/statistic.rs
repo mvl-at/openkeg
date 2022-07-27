@@ -20,10 +20,10 @@ use std::collections::HashMap;
 use reqwest::{Client, Method};
 use rocket::serde::json::Json;
 
+use crate::api_result::Result;
 use crate::archive::database::request;
 use crate::archive::model::CountStatistic;
 use crate::archive::statistic::CountStatisticType;
-use crate::errors::Result;
 use crate::Config;
 
 pub async fn count_statistic(

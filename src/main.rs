@@ -38,11 +38,11 @@ use crate::ldap::sync::member_synchronization_task;
 use crate::members::state::MemberState;
 use crate::user::key::{read_private_key, read_public_key};
 
+mod api_result;
 mod archive;
 mod config;
 mod cors;
 mod database;
-mod errors;
 mod ldap;
 mod members;
 mod schema_util;

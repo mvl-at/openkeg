@@ -20,11 +20,11 @@ use rocket::serde::json::Json;
 use rocket::State;
 use rocket_okapi::openapi;
 
+use crate::api_result::Result;
 use crate::archive::database;
 use crate::archive::database::score::all_scores;
-use crate::archive::database::{FindResponse, Pagination};
+use crate::archive::database::{FindResponse, OperationResponse, Pagination};
 use crate::archive::model::{Score, ScoreSearchTermField};
-use crate::errors::Result;
 use crate::schema_util::SchemaExample;
 use crate::Config;
 
@@ -120,9 +120,23 @@ pub fn put_score(score: Json<Score>, conf: &State<Config>) -> Result<Score> {
     Ok(Json(Score::example()))
 }
 
-/// Delete a score by its id.
+/// Delete a score by its id and revision.
+///
+/// # Arguments
+///
+/// * `id`: the id of the score to delete
+/// * `rev`: the revision of the score to delete
+/// * `conf`: the application configuration
+/// * `client`: the client to perform the request
+///
+/// returns: Result<Json<OperationResponse>, Error>
 #[openapi(tag = "Archive")]
-#[delete("/<id>")]
-pub fn delete_score(id: i64) -> Result<()> {
-    Ok(Json(()))
+#[delete("/<id>?<rev>")]
+pub async fn delete_score(
+    id: String,
+    rev: String,
+    conf: &State<Config>,
+    client: &State<Client>,
+) -> Result<OperationResponse> {
+    database::score::delete_score(conf, client, id, rev).await
 }

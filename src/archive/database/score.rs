@@ -18,13 +18,14 @@
 use std::collections::HashMap;
 
 use reqwest::{Client, Method};
-use rocket::http::Status;
 use rocket::serde::json::Json;
 use serde_json::{json, Value};
 
-use crate::archive::database::{check_score_partition, request, FindResponse, Pagination};
+use crate::api_result::Result;
+use crate::archive::database::{
+    check_score_partition, request, FindResponse, OperationResponse, Pagination,
+};
 use crate::archive::model::{Score, ScoreSearchTermField};
-use crate::errors::{Error, Result};
 use crate::Config;
 
 pub async fn all_scores(
@@ -102,7 +103,7 @@ pub async fn search_scores(
         &parameters,
     )
     .await
-    .map(|r| Json(r))
+    .map(Json)
 }
 
 /// Find a single score by its id.
@@ -126,6 +127,40 @@ pub async fn get_score(conf: &Config, client: &Client, id: String) -> Result<Sco
         no_op(),
         Method::GET,
         &format!("{}/{}", &conf.database.database_mapping.get_score, id),
+        &parameters,
+    )
+    .await
+    .map(Json)
+}
+
+/// Delete a score by its id and revision.
+///
+/// # Arguments
+///
+/// * `id`: the id of the score to delete
+/// * `rev`: the revision of the score to delete
+/// * `conf`: the application configuration
+/// * `client`: the client to perform the request
+///
+/// returns: Result<Json<OperationResponse>, Error>
+pub async fn delete_score(
+    conf: &Config,
+    client: &Client,
+    id: String,
+    rev: String,
+) -> Result<OperationResponse> {
+    let id_result = check_score_partition(&id, &conf.database.score_partition);
+    if id_result.is_some() {
+        return Err(id_result.unwrap());
+    }
+    let mut parameters: HashMap<String, String> = HashMap::new();
+    parameters.insert("rev".to_string(), rev);
+    request(
+        conf,
+        client,
+        no_op(),
+        Method::DELETE,
+        &format!("{}/{}", &conf.database.database_mapping.delete_score, id),
         &parameters,
     )
     .await
