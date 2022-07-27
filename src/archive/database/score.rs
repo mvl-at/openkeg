@@ -18,12 +18,14 @@
 use std::collections::HashMap;
 
 use reqwest::{Client, Method};
+use rocket::http::Status;
 use rocket::serde::json::Json;
 use serde_json::{json, Value};
 
-use crate::api_result::Result;
+use crate::api_result::{Error, Result};
 use crate::archive::database::{
-    check_score_partition, request, FindResponse, OperationResponse, Pagination,
+    check_document_partition, generate_document_id, request, FindResponse, OperationResponse,
+    Pagination,
 };
 use crate::archive::model::{Score, ScoreSearchTermField};
 use crate::Config;
@@ -116,7 +118,7 @@ pub async fn search_scores(
 ///
 /// returns: Result<Json<Score>, Error>
 pub async fn get_score(conf: &Config, client: &Client, id: String) -> Result<Score> {
-    let id_result = check_score_partition(&id, &conf.database.score_partition);
+    let id_result = check_document_partition(&id, &conf.database.score_partition);
     if id_result.is_some() {
         return Err(id_result.unwrap());
     }
@@ -127,6 +129,54 @@ pub async fn get_score(conf: &Config, client: &Client, id: String) -> Result<Sco
         no_op(),
         Method::GET,
         &format!("{}/{}", &conf.database.database_mapping.get_score, id),
+        &parameters,
+    )
+    .await
+    .map(Json)
+}
+
+/// Insert a score into the database.
+/// When creating a new score, make sure to leave its `_id` and `rev` to `None` and set both on update.
+/// In the case of an `409 Conflict` just get the current revision of the score and try again.
+///
+/// # Arguments
+///
+/// * `conf`: the application configuration
+/// * `client`: the client to perform the request with
+/// * `score`: the score to insert
+pub async fn put_score<'de>(conf: &Config, client: &Client, mut score: Score) -> Result<Score> {
+    if (score.couch_id.is_none() && score.couch_revision.is_some())
+        || (score.couch_id.is_some() && score.couch_revision.is_none())
+    {
+        return Err(Error {
+            err: "invalid id".to_string(),
+            msg: Some("you must either provide both id and rev, in order to update a document, or provide none of them, in order to insert one".to_string()),
+            http_status_code: Status::BadRequest.code,
+        });
+    }
+    let mut couch_id = score.couch_id.clone();
+    if score.couch_id.is_some() {
+        let id_result =
+            check_document_partition(&couch_id.unwrap(), &conf.database.score_partition);
+        if id_result.is_some() {
+            return Err(id_result.unwrap());
+        }
+    } else {
+        score.couch_id = Some(generate_document_id(&conf.database.score_partition));
+    }
+    couch_id = score.couch_id.clone();
+    let api_url = format!(
+        "{}/{}",
+        conf.database.database_mapping.put_score,
+        couch_id.unwrap()
+    );
+    let parameters: HashMap<String, String> = HashMap::new();
+    request(
+        conf,
+        client,
+        Box::new(|r| r.json(&score)),
+        Method::PUT,
+        &api_url,
         &parameters,
     )
     .await
@@ -149,7 +199,7 @@ pub async fn delete_score(
     id: String,
     rev: String,
 ) -> Result<OperationResponse> {
-    let id_result = check_score_partition(&id, &conf.database.score_partition);
+    let id_result = check_document_partition(&id, &conf.database.score_partition);
     if id_result.is_some() {
         return Err(id_result.unwrap());
     }

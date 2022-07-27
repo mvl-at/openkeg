@@ -25,7 +25,6 @@ use crate::archive::database;
 use crate::archive::database::score::all_scores;
 use crate::archive::database::{FindResponse, OperationResponse, Pagination};
 use crate::archive::model::{Score, ScoreSearchTermField};
-use crate::schema_util::SchemaExample;
 use crate::Config;
 
 /// Get all scores from the database with pagination.
@@ -113,11 +112,23 @@ pub async fn get_score(id: String, conf: &State<Config>, client: &State<Client>)
     database::score::get_score(conf, client, id).await
 }
 
-/// Create or update a score.
+/// Insert a score into the database.
+/// When creating a new score, make sure to leave its `_id` and `rev` to `None` and set both on update.
+/// In the case of an `409 Conflict` just get the current revision of the score and try again.
+///
+/// # Arguments
+///
+/// * `score`: the score to insert
+/// * `conf`: the application configuration
+/// * `client`: the client to perform the request with
 #[openapi(tag = "Archive")]
 #[put("/", data = "<score>")]
-pub fn put_score(score: Json<Score>, conf: &State<Config>) -> Result<Score> {
-    Ok(Json(Score::example()))
+pub async fn put_score(
+    score: Json<Score>,
+    conf: &State<Config>,
+    client: &State<Client>,
+) -> Result<Score> {
+    database::score::put_score(conf, client, score.0).await
 }
 
 /// Delete a score by its id and revision.

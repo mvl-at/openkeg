@@ -20,6 +20,7 @@ use rocket::http::Status;
 use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::api_result::Error;
 use crate::database::authenticate;
@@ -313,7 +314,7 @@ where
 /// * `partition`: the partition which could contain the [id]
 ///
 /// returns: Option<Error>
-fn check_score_partition(id: &String, partition: &String) -> Option<Error> {
+fn check_document_partition(id: &String, partition: &String) -> Option<Error> {
     if id.starts_with(format!("{}:", partition).as_str()) {
         None
     } else {
@@ -323,4 +324,16 @@ fn check_score_partition(id: &String, partition: &String) -> Option<Error> {
             http_status_code: Status::UnprocessableEntity.code,
         })
     }
+}
+
+/// Generate an id for a document with a given partition.
+/// A UUID will be used, the format will be `partition:UUID`.
+/// 
+/// # Arguments 
+/// 
+/// * `partition`: the partition to generate the id for
+/// 
+/// returns: String 
+fn generate_document_id(partition: &String) -> String {
+    format!("{}:{}", partition, Uuid::new_v4())
 }
