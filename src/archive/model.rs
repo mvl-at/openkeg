@@ -17,6 +17,7 @@
 
 use rocket::serde::{Deserialize, Serialize};
 use rocket_okapi::JsonSchema;
+use std::fmt;
 
 use crate::schema_util::SchemaExample;
 
@@ -148,12 +149,18 @@ pub struct ScoreSearchParameters {
 #[schemars(example = "Self::example")]
 pub enum ScoreSearchTermField {
     Title,
-    Genre,
-    Subtitle,
-    Arranger,
-    Composer,
+    Genres,
+    Subtitles,
+    Arrangers,
+    Composers,
     Alias,
     Publisher,
+}
+
+impl fmt::Display for ScoreSearchTermField {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 pub type CountStatistic = Statistic<String, u64>;
@@ -242,5 +249,19 @@ impl SchemaExample for Book {
 impl SchemaExample for ScoreSearchTermField {
     fn example() -> Self {
         Self::Title
+    }
+}
+
+impl ScoreSearchTermField {
+    pub fn is_array(&self) -> bool {
+        match self {
+            ScoreSearchTermField::Title => false,
+            ScoreSearchTermField::Genres => true,
+            ScoreSearchTermField::Subtitles => true,
+            ScoreSearchTermField::Arrangers => true,
+            ScoreSearchTermField::Composers => true,
+            ScoreSearchTermField::Alias => true,
+            ScoreSearchTermField::Publisher => false,
+        }
     }
 }

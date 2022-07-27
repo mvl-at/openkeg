@@ -15,6 +15,7 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+use crate::archive::database;
 use reqwest::Client;
 use rocket::serde::json::Json;
 use rocket::State;
@@ -78,8 +79,23 @@ pub async fn search_scores(
     ascending: Option<bool>,
     limit: u64,
     bookmark: Option<String>,
+    conf: &State<Config>,
+    client: &State<Client>,
 ) -> Result<FindResponse<Score>> {
-    unimplemented!()
+    database::score::search_scores(
+        conf,
+        client,
+        search_term,
+        regex,
+        attributes,
+        book,
+        location,
+        sort,
+        ascending,
+        limit,
+        bookmark,
+    )
+    .await
 }
 
 /// Return a single score.
