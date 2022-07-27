@@ -128,3 +128,6 @@ target/
 *.pem
 *.der
 *.crt
+
+# Application configuration
+keg.toml
