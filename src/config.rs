@@ -239,6 +239,8 @@ pub struct DatabaseMapping {
     pub authentication: String,
     /// The endpoint which returns all scores which are available, requires the ability of sorting
     pub all_scores: String,
+    /// The endpoint to search for scores
+    pub find_scores: String,
     /// The endpoint for the genres count statistic.
     pub genres_statistic: String,
     /// The endpoint for the composers count statistic.
@@ -254,6 +256,7 @@ impl Default for DatabaseMapping {
         Self {
             authentication: "/_session".to_string(),
             all_scores: "".to_string(),
+            find_scores: "".to_string(),
             genres_statistic: "".to_string(),
             composers_statistic: "".to_string(),
             arrangers_statistic: "".to_string(),
