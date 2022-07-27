@@ -15,12 +15,12 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-use crate::archive::database;
 use reqwest::Client;
 use rocket::serde::json::Json;
 use rocket::State;
 use rocket_okapi::openapi;
 
+use crate::archive::database;
 use crate::archive::database::score::all_scores;
 use crate::archive::database::{FindResponse, Pagination};
 use crate::archive::model::{Score, ScoreSearchTermField};
@@ -67,7 +67,7 @@ pub async fn get_scores(
 /// returns: Result<Json<FindResponse<Score>>, Error>
 #[openapi(tag = "Archive")]
 #[get(
-    "/searches?<search_term>&<regex>&<attributes>&<book>&<location>&<sort>&<ascending>&<limit>&<bookmark>"
+"/searches?<search_term>&<regex>&<attributes>&<book>&<location>&<sort>&<ascending>&<limit>&<bookmark>"
 )]
 pub async fn search_scores(
     search_term: Option<String>,
@@ -98,11 +98,19 @@ pub async fn search_scores(
     .await
 }
 
-/// Return a single score.
+/// Find a single score by its id.
+///
+/// # Arguments
+///
+/// * `id`: the id of the document which contains the score
+/// * `conf`: the application configuration
+/// * `client` the client to send the request with
+///
+/// returns: Result<Json<Score>, Error>
 #[openapi(tag = "Archive")]
 #[get("/<id>")]
-pub fn get_score(id: i64) -> Result<Score> {
-    Ok(Json(Score::example()))
+pub async fn get_score(id: String, conf: &State<Config>, client: &State<Client>) -> Result<Score> {
+    database::score::get_score(conf, client, id).await
 }
 
 /// Create or update a score.

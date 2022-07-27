@@ -104,6 +104,29 @@ pub async fn search_scores(
     .map(|r| Json(r))
 }
 
+/// Find a single score by its id.
+///
+/// # Arguments
+///
+/// * `id`: the id of the document which contains the score
+/// * `conf`: the application configuration
+/// * `client` the client to send the request with
+///
+/// returns: Result<Json<Score>, Error>
+pub async fn get_score(conf: &Config, client: &Client, id: String) -> Result<Score> {
+    let parameters: HashMap<String, String> = HashMap::new();
+    request(
+        conf,
+        client,
+        no_op(),
+        Method::GET,
+        &format!("{}/{}", &conf.database.database_mapping.get_score, id),
+        &parameters,
+    )
+    .await
+    .map(Json)
+}
+
 /// Construct a filter for the couchdb to search scores.
 ///
 /// # Arguments
@@ -202,4 +225,8 @@ fn term_from_regex(term: String, regex: &Option<bool>) -> String {
 /// returns: String
 fn fuzzy_regex(term: String) -> String {
     term
+}
+
+fn no_op<'a, E>() -> Box<dyn FnOnce(E) -> E + Send + 'a> {
+    Box::new(|e| e)
 }
