@@ -18,12 +18,13 @@
 use std::collections::HashMap;
 
 use reqwest::{Client, Method};
+use rocket::http::Status;
 use rocket::serde::json::Json;
 use serde_json::{json, Value};
 
-use crate::archive::database::{request, FindResponse, Pagination};
+use crate::archive::database::{check_score_partition, request, FindResponse, Pagination};
 use crate::archive::model::{Score, ScoreSearchTermField};
-use crate::errors::Result;
+use crate::errors::{Error, Result};
 use crate::Config;
 
 pub async fn all_scores(
@@ -114,6 +115,10 @@ pub async fn search_scores(
 ///
 /// returns: Result<Json<Score>, Error>
 pub async fn get_score(conf: &Config, client: &Client, id: String) -> Result<Score> {
+    let id_result = check_score_partition(&id, &conf.database.score_partition);
+    if id_result.is_some() {
+        return Err(id_result.unwrap());
+    }
     let parameters: HashMap<String, String> = HashMap::new();
     request(
         conf,

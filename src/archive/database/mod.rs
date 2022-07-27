@@ -282,3 +282,23 @@ where
     }
     Ok(deserialized_result.unwrap())
 }
+
+/// Checks whether the provided [id] is part of the [partition] ot not.
+///
+/// # Arguments
+///
+/// * `id`: the id to check
+/// * `partition`: the partition which could contain the [id]
+///
+/// returns: Option<Error>
+fn check_score_partition(id: &String, partition: &String) -> Option<Error> {
+    if id.starts_with(format!("{}:", partition).as_str()) {
+        None
+    } else {
+        Some(Error {
+            err: "invalid id".to_string(),
+            msg: Some("the provided id starts with an invalid partition".to_string()),
+            http_status_code: Status::UnprocessableEntity.code,
+        })
+    }
+}
