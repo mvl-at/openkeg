@@ -286,36 +286,38 @@ fn construct_filter(
     limit: u64,
     bookmark: Option<String>,
 ) -> Value {
-    let sort_value = sort
-        .map(|s| json!({s.to_string().as_str(): ascending.unwrap_or(true)}))
-        .unwrap_or(json!([]));
-    let mut criteria = HashMap::new();
+    let sort_value = sort.map(|s| json!([{s.to_string().to_lowercase().as_str(): if ascending.unwrap_or(true) {"asc"} else {"desc}"}}])).unwrap_or(json!([]));
+    let mut and_criteria = HashMap::new();
+    let mut search_term_criteria = vec![];
     if book.is_some() {
         let book_criteria = json!({"$elemMatch": {"book": book.unwrap()}});
-        criteria.insert("pages".to_string(), book_criteria);
+        and_criteria.insert("pages".to_string(), book_criteria);
     }
     if location.is_some() {
-        criteria.insert("location".to_string(), Value::String(location.unwrap()));
+        and_criteria.insert("location".to_string(), Value::String(location.unwrap()));
     }
     if search_term.is_some() {
         let term = search_term.unwrap();
         attributes.iter().for_each(|a| {
+            let key = a.to_string().to_lowercase();
             let value = if a.is_array() {
-                json!({
+                json!({key: {
                         "$elemMatch": {
                             "$regex": term_from_regex(term.clone(), &regex)
                         }
+                    }
                 })
             } else {
-                json!({
+                json!({key: {
                         "$regex": term_from_regex(term.clone(), &regex)
-                })
+                }})
             };
-            criteria.insert(a.to_string(), value);
+            search_term_criteria.push(value);
         });
+        and_criteria.insert("$or".to_string(), json!(search_term_criteria));
     }
     json!({
-        "selector": json!(criteria),
+        "selector": json!(and_criteria),
         "sort": sort_value,
         "stable": true,
         "skip": 0,
