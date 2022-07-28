@@ -15,17 +15,36 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-use rocket::serde::json::Json;
+use reqwest::Client;
+use rocket::State;
 use rocket_okapi::openapi;
 
 use crate::api_result::Result;
-use crate::archive::database::Pagination;
+use crate::archive::database;
+use crate::archive::database::FindResponse;
 use crate::archive::model::Score;
-use crate::schema_util::SchemaExample;
+use crate::Config;
 
-/// Return the scores of a book in the correct order by their page.
+/// Fetch all scores which are part of the given [book].
+/// The scores are sorted as usual in books which means the following order:
+///
+/// . `prefix` (`None` last)
+/// . `number`
+/// . `suffix` (`None` last)
+///
+/// # Arguments
+///
+/// * `conf`: the application configuration
+/// * `client`: the client to send the database requests with
+/// * `name`: the name of the book to fetch
+///
+/// returns: Result<Json<FindResponse<Score>>, Error>
 #[openapi(tag = "Archive")]
 #[get("/<name>/content")]
-pub fn get_book_content(name: String) -> Result<Pagination<Score>> {
-    Ok(Json(SchemaExample::example()))
+pub async fn get_book_content(
+    conf: &State<Config>,
+    client: &State<Client>,
+    name: String,
+) -> Result<FindResponse<Score>> {
+    database::score::get_book_content(conf, client, name).await
 }

@@ -15,6 +15,7 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+use std::cmp::Ordering;
 use std::collections::HashMap;
 
 use reqwest::{Client, Method};
@@ -217,6 +218,48 @@ pub async fn delete_score(
     .map(Json)
 }
 
+/// Fetch all scores which are part of the given [book].
+/// The scores are sorted as usual in books which means the following order:
+///
+/// . `prefix` (`None` last)
+/// . `number`
+/// . `suffix` (`None` last)
+///
+/// # Arguments
+///
+/// * `conf`: the application configuration
+/// * `client`: the client to send the database requests with
+/// * `name`: the name of the book to fetch
+///
+/// returns: Result<Json<FindResponse<Score>>, Error>
+pub async fn get_book_content(
+    conf: &Config,
+    client: &Client,
+    book: String,
+) -> Result<FindResponse<Score>> {
+    let result = search_scores(
+        conf,
+        client,
+        None,
+        None,
+        vec![],
+        Some(book.clone()),
+        None,
+        None,
+        None,
+        0xffff,
+        None,
+    )
+    .await;
+    if result.is_err() {
+        return result;
+    }
+    let mut response = result.unwrap();
+    let scores = &mut response.docs;
+    sort_by_book_page(&book, scores);
+    Ok(response)
+}
+
 /// Construct a filter for the couchdb to search scores.
 ///
 /// # Arguments
@@ -246,38 +289,30 @@ fn construct_filter(
     let sort_value = sort
         .map(|s| json!({s.to_string().as_str(): ascending.unwrap_or(true)}))
         .unwrap_or(json!([]));
-    let mut criteria: Vec<Value> = vec![];
+    let mut criteria = HashMap::new();
     if book.is_some() {
-        let book_criteria = json!({"pages":{"$elemMatch": {"book": book.unwrap()}}});
-        criteria.push(book_criteria);
+        let book_criteria = json!({"$elemMatch": {"book": book.unwrap()}});
+        criteria.insert("pages".to_string(), book_criteria);
     }
     if location.is_some() {
-        let location_criteria = json!({"location": location.unwrap()});
-        criteria.push(location_criteria);
+        criteria.insert("location".to_string(), Value::String(location.unwrap()));
     }
     if search_term.is_some() {
         let term = search_term.unwrap();
-        let mut attribute_criteria: Vec<Value> = attributes
-            .iter()
-            .map(|a| {
-                if a.is_array() {
-                    json!({
-                        a.to_string().as_str(): {
-                            "$elemMatch": {
-                                "$regex": term_from_regex(term.clone(), &regex)
-                            }
-                        }
-                    })
-                } else {
-                    json!({
-                        a.to_string().as_str(): {
+        attributes.iter().for_each(|a| {
+            let value = if a.is_array() {
+                json!({
+                        "$elemMatch": {
                             "$regex": term_from_regex(term.clone(), &regex)
                         }
-                    })
-                }
-            })
-            .collect();
-        criteria.append(&mut attribute_criteria);
+                })
+            } else {
+                json!({
+                        "$regex": term_from_regex(term.clone(), &regex)
+                })
+            };
+            criteria.insert(a.to_string(), value);
+        });
     }
     json!({
         "selector": json!(criteria),
@@ -319,4 +354,59 @@ fn fuzzy_regex(term: String) -> String {
 
 fn no_op<'a, E>() -> Box<dyn FnOnce(E) -> E + Send + 'a> {
     Box::new(|e| e)
+}
+
+/// Function to in-place sort scores as in books.
+/// This requires a book name and the scores to sort.
+/// Scores will be sorted by their pages in the following order:
+///
+/// . `prefix` (`None` last)
+/// . `number`
+/// . `suffix` (`None` last)
+///
+/// # Arguments
+///
+/// * `book`: the book to use for the pages
+/// * `scores`: the scores to sort
+fn sort_by_book_page(book: &String, scores: &mut Vec<Score>) {
+    scores.sort_by(|score_a, score_b| {
+        let page_opt_a = score_a
+            .pages
+            .iter()
+            .find(|p| book.eq_ignore_ascii_case(p.book.as_str()));
+        let page_opt_b = score_b
+            .pages
+            .iter()
+            .find(|p| book.eq_ignore_ascii_case(p.book.as_str()));
+        if page_opt_a.is_none() {
+            return if page_opt_b.is_none() {
+                Ordering::Equal
+            } else {
+                Ordering::Less
+            };
+        }
+        if page_opt_b.is_none() {
+            return Ordering::Greater;
+        }
+        let page_a_begin = &page_opt_a.unwrap().begin;
+        let page_b_begin = &page_opt_b.unwrap().begin;
+        let prefix_ordering = page_a_begin.prefix.cmp(&page_b_begin.prefix);
+        if prefix_ordering != Ordering::Equal {
+            return if page_a_begin.prefix.is_none() || page_b_begin.prefix.is_none() {
+                prefix_ordering.reverse()
+            } else {
+                prefix_ordering
+            };
+        }
+        let number_ordering = page_a_begin.number.cmp(&page_b_begin.number);
+        if number_ordering != Ordering::Equal {
+            return number_ordering;
+        }
+        let suffix_ordering = page_a_begin.suffix.cmp(&page_b_begin.suffix);
+        if page_a_begin.suffix.is_none() || page_b_begin.suffix.is_none() {
+            suffix_ordering.reverse()
+        } else {
+            suffix_ordering
+        }
+    });
 }
