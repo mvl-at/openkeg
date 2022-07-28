@@ -23,7 +23,10 @@ base64 = "0.20.0-alpha.1"
 jsonwebtoken = "8.1.1"
 chrono = "0.4.19"
 reqwest = { version = "0.11.11", features = ["cookies", "json", "serde_json"] }
-uuid = {version="1.1.2", features = ["v4", "fast-rng"]}
+uuid = { version = "1.1.2", features = ["v4", "fast-rng"] }
+
+[dev-dependencies]
+regex = "1.6.0"
 
 [profile.release]
 opt-level = "s"

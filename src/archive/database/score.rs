@@ -25,8 +25,8 @@ use serde_json::{json, Value};
 
 use crate::api_result::{Error, Result};
 use crate::archive::database::{
-    check_document_partition, generate_document_id, request, FindResponse, OperationResponse,
-    Pagination,
+    check_document_partition, fuzzy, generate_document_id, request, FindResponse,
+    OperationResponse, Pagination,
 };
 use crate::archive::model::{Score, ScoreSearchTermField};
 use crate::Config;
@@ -337,19 +337,8 @@ fn term_from_regex(term: String, regex: &Option<bool>) -> String {
     if regex.unwrap_or(false) {
         term
     } else {
-        fuzzy_regex(term)
+        fuzzy::fuzzy_regex(term)
     }
-}
-
-/// Convert the search term into a fuzzy one.
-///
-/// # Arguments
-///
-/// * `term`: the term to convert
-///
-/// returns: String
-fn fuzzy_regex(term: String) -> String {
-    term
 }
 
 fn no_op<'a, E>() -> Box<dyn FnOnce(E) -> E + Send + 'a> {

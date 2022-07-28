@@ -27,6 +27,7 @@ use crate::database::authenticate;
 use crate::schema_util::SchemaExample;
 use crate::Config;
 
+mod fuzzy;
 pub mod score;
 pub mod statistic;
 
@@ -328,12 +329,12 @@ fn check_document_partition(id: &String, partition: &String) -> Option<Error> {
 
 /// Generate an id for a document with a given partition.
 /// A UUID will be used, the format will be `partition:UUID`.
-/// 
-/// # Arguments 
-/// 
+///
+/// # Arguments
+///
 /// * `partition`: the partition to generate the id for
-/// 
-/// returns: String 
+///
+/// returns: String
 fn generate_document_id(partition: &String) -> String {
     format!("{}:{}", partition, Uuid::new_v4())
 }
