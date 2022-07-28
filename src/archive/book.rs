@@ -25,7 +25,7 @@ use crate::archive::database::FindResponse;
 use crate::archive::model::Score;
 use crate::Config;
 
-/// Fetch all scores which are part of the given [book].
+/// Fetch all scores which are part of the given `book`.
 /// The scores are sorted as usual in books which means the following order:
 ///
 /// . `prefix` (`None` last)

@@ -109,7 +109,7 @@ pub struct PagePlacement {
     /// The number where the page begins at.
     pub begin: PageNumber,
     /// The number where the page ends at.
-    /// The page ends at [begin] if absent.
+    /// The page ends at `begin` if absent.
     pub end: Option<PageNumber>,
     /// The id of the [Score] which is places at this page.
     pub score: i64,

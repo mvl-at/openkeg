@@ -60,9 +60,9 @@ pub async fn all_scores(
 ///
 /// * `conf`: the application configuration
 /// * `client`: the client to send the requests with
-/// * `search_term`: the term to search for, if `None` all [attributes] will be ignored
-/// * `regex`: `Some(true)` if [search_term] should be interpreted as regex, otherwise it will be interpreted as a fuzzy search term
-/// * `attributes`: the attributes to search for [search_term]
+/// * `search_term`: the term to search for, if `None` all `attributes` will be ignored
+/// * `regex`: `Some(true)` if `search_term` should be interpreted as regex, otherwise it will be interpreted as a fuzzy search term
+/// * `attributes`: the attributes to search for `search_term`
 /// * `book`: the book to search for
 /// * `location`: the location to search for
 /// * `sort`: the attribute to define the order for
@@ -218,7 +218,7 @@ pub async fn delete_score(
     .map(Json)
 }
 
-/// Fetch all scores which are part of the given [book].
+/// Fetch all scores which are part of the given `book`.
 /// The scores are sorted as usual in books which means the following order:
 ///
 /// . `prefix` (`None` last)
@@ -264,9 +264,9 @@ pub async fn get_book_content(
 ///
 /// # Arguments
 ///
-/// * `search_term`: the term to search for, if `None` all [attributes] will be ignored
-/// * `regex`: `Some(true)` if [search_term] should be interpreted as regex, otherwise it will be interpreted as a fuzzy search term
-/// * `attributes`: the attributes to search for [search_term]
+/// * `search_term`: the term to search for, if `None` all `attributes` will be ignored
+/// * `regex`: `Some(true)` if `search_term` should be interpreted as regex, otherwise it will be interpreted as a fuzzy search term
+/// * `attributes`: the attributes to search for `search_term`
 /// * `book`: the book to search for
 /// * `location`: the location to search for
 /// * `sort`: the attribute to define the order for
@@ -330,7 +330,7 @@ fn construct_filter(
 /// # Arguments
 ///
 /// * `term`: the term to convert
-/// * `regex`: `Some(true)` if [search_term] should be interpreted as regex, otherwise it will be interpreted as a fuzzy search term
+/// * `regex`: `Some(true)` if `search_term` should be interpreted as regex, otherwise it will be interpreted as a fuzzy search term
 ///
 /// returns: String
 fn term_from_regex(term: String, regex: &Option<bool>) -> String {

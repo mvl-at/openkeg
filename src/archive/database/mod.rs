@@ -306,12 +306,12 @@ where
     Ok(deserialized_result.unwrap())
 }
 
-/// Checks whether the provided [id] is part of the [partition] ot not.
+/// Checks whether the provided `id` is part of the `partition` ot not.
 ///
 /// # Arguments
 ///
 /// * `id`: the id to check
-/// * `partition`: the partition which could contain the [id]
+/// * `partition`: the partition which could contain the `id`
 ///
 /// returns: Option<Error>
 fn check_document_partition(id: &String, partition: &String) -> Option<Error> {

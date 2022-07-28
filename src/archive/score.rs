@@ -45,16 +45,16 @@ pub async fn get_scores(
 /// # Paginating
 ///
 /// This request supports paginating in a quite inconvenient way:
-/// One can only specify the [limit], the offset/skip can be only described by the [bookmark].
-/// The [bookmark] works such as an iterator but with anchors.
+/// One can only specify the `limit`, the offset/skip can be only described by the `bookmark`.
+/// The `bookmark` works such as an iterator but with anchors.
 /// E.g.: if `limit = 10` and `bookmark` is unset, the first 10 results will be shown.
 /// Within this response, the server will return a `bookmark` string.
 /// This string can be used in the next request in order to retrieve the next 10 results and so on.
 ///
 /// # Arguments
 ///
-/// * `search_term`: a string to search for in the specified [attributes]
-/// * `regex`: if `true` the [search_term] will be interpreted as a regular expression instead of a fuzzy search term
+/// * `search_term`: a string to search for in the specified `attributes`
+/// * `regex`: if `true` the `search_term` will be interpreted as a regular expression instead of a fuzzy search term
 /// * `attributes`: the attributes to search for
 /// * `book`: if set, the score must contain a page with exactly this book
 /// * `location`: if set, the score must be have set a location with exact this string
