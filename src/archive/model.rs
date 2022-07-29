@@ -23,7 +23,7 @@ use crate::schema_util::SchemaExample;
 
 /// Representation of a score considering the intellectual property, not a specific copy.
 #[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(crate = "rocket::serde")]
+#[serde(crate = "rocket::serde", default)]
 #[schemars(example = "Self::example")]
 pub struct Score {
     /// The id of the score which couch db is using
