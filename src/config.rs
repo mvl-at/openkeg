@@ -255,6 +255,10 @@ pub struct DatabaseMapping {
     pub arrangers_statistic: String,
     /// The endpoint for the publishers count statistic.
     pub publishers_statistic: String,
+    /// The endpoint for the books count statistic.
+    pub books_statistic: String,
+    /// The endpoint for the locations count statistic.
+    pub locations_statistic: String,
 }
 
 impl Default for DatabaseMapping {
@@ -270,6 +274,8 @@ impl Default for DatabaseMapping {
             composers_statistic: "".to_string(),
             arrangers_statistic: "".to_string(),
             publishers_statistic: "".to_string(),
+            books_statistic: "".to_string(),
+            locations_statistic: "".to_string(),
         }
     }
 }

@@ -32,6 +32,8 @@ pub enum CountStatisticType {
     Arrangers,
     Composers,
     Publishers,
+    Locations,
+    Books,
 }
 
 /// Fetch the statistic for various items such as genres with their count.
