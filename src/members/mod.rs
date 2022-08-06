@@ -24,11 +24,21 @@ pub mod model;
 pub mod photo;
 pub mod state;
 
+#[cfg(feature = "debug")]
 pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
     openapi_get_routes_spec![
         settings: controller::all_members,
         controller::photo,
         controller::synchronize,
-        controller::list
+        controller::list,
+    ]
+}
+
+#[cfg(not(feature = "debug"))]
+pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
+    openapi_get_routes_spec![
+        settings: controller::all_members,
+        controller::photo,
+        controller::synchronize,
     ]
 }

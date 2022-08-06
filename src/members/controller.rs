@@ -92,6 +92,7 @@ pub fn synchronize(config: &State<Config>, member_state: &State<MemberStateMutex
 
 /// Print all members to the debug console.
 /// Only for debug purposes.
+#[cfg(feature = "debug")]
 #[openapi(tag = "Members")]
 #[get("/debug-list")]
 pub async fn list(member_state: &State<MemberStateMutex>) {
