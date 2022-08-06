@@ -60,13 +60,13 @@ pub async fn login(
     .await;
     if member_result.is_ok() {
         let member = member_result.unwrap();
-        debug!("authenticated user: {}", member.username);
+        debug!("Authenticated user: {}", member.username);
         let (request_token, renewal_token) = (
             generate_token(&member, true, config, private_key),
             generate_token(&member, false, config, private_key),
         );
         debug!(
-            "generated tokens {:?} and {:?}",
+            "Generated tokens {:?} and {:?}",
             request_token, renewal_token
         );
         AuthenticationResponder {

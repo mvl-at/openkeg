@@ -49,12 +49,12 @@ pub async fn authenticate(
     username: &String,
     password: &String,
 ) -> Result<Member, ()> {
-    debug!("try to authenticate {}", username);
+    debug!("Try to authenticate {}", username);
     let member_state_lock = member_state.read().await;
     let member_option = member_state_lock.all_members.find(username);
     if member_option.is_none() {
         info!(
-            "someone tried to authenticate with non-existing username: {}",
+            "Someone tried to authenticate with non-existing username: {}",
             username
         );
         return Err(());
@@ -62,11 +62,11 @@ pub async fn authenticate(
     let member = member_option.unwrap();
     let dn = &member.full_username;
     let ldap_config = &config.ldap;
-    info!("bind to auth server: {}", ldap_config.server);
+    info!("Bind to auth server: {}", ldap_config.server);
     let ldap_result = LdapConnAsync::new(&*ldap_config.server).await;
     if ldap_result.is_err() {
         error!(
-            "failed to open auth session: {:#?}",
+            "Failed to open auth session: {:#?}",
             ldap_result.err().unwrap()
         );
         return Err(());
@@ -79,7 +79,7 @@ pub async fn authenticate(
     }
     let res = result.unwrap();
     if res.success().is_ok() {
-        info!("authenticated {}", member.username);
+        info!("Authenticated {}", member.username);
         return Ok(member.clone());
     }
     Err(())

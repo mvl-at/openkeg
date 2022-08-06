@@ -59,6 +59,18 @@ include::keg.example.toml[]
 
 In order to use the pre-commit hook for formatting the code before every commit, just run `make` in the project root once.
 
+=== Informal Coding Rules
+
+Some rules cannot be expressed via the `.editorconfig` as they are often semantic and subject of taste.
+
+==== Syntactic Rules
+
+* Begin log messages uppercase
+
+==== Coding Style Rules
+
+* Prefer functional way over imperative
+
 == Name Origin
 
 As in many music societies, the consumption of kegs is common in the Musikverein Leopoldsdorf.

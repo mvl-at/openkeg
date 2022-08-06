@@ -39,7 +39,7 @@ pub async fn initialize_client(conf: &Config) -> DatabaseClient {
         .build();
     if client_result.is_err() {
         error!(
-            "unable to initialize http client: {}",
+            "Unable to initialize http client: {}",
             client_result.err().unwrap()
         );
         panic!();
@@ -82,7 +82,7 @@ pub(crate) async fn authenticate(conf: &Config, client: &Client) -> Result<(), (
     ));
     if url_result.is_err() {
         warn!(
-            "unable to parse the authentication url: {}",
+            "Unable to parse the authentication url: {}",
             url_result.err().unwrap()
         );
         return Err(());
@@ -93,7 +93,7 @@ pub(crate) async fn authenticate(conf: &Config, client: &Client) -> Result<(), (
         .build();
     if request_result.is_err() {
         warn!(
-            "unable to build the authentication request: {}",
+            "Unable to build the authentication request: {}",
             request_result.err().unwrap()
         );
         return Err(());
@@ -101,7 +101,7 @@ pub(crate) async fn authenticate(conf: &Config, client: &Client) -> Result<(), (
     let response_result = client.execute(request_result.unwrap()).await;
     if response_result.is_err() {
         warn!(
-            "unable to execute authentication request: {}",
+            "Unable to execute authentication request: {}",
             response_result.err().unwrap()
         );
         return Err(());
@@ -109,12 +109,12 @@ pub(crate) async fn authenticate(conf: &Config, client: &Client) -> Result<(), (
     let response = response_result.unwrap();
     if response.status().is_client_error() || response.status().is_server_error() {
         warn!(
-            "unable to authenticate, the server returned: {}",
+            "Unable to authenticate, the server returned: {}",
             response.status()
         );
         Err(())
     } else {
-        info!("authentication to the database interface was successful");
+        info!("Authentication to the database interface was successful");
         Ok(())
     }
 }

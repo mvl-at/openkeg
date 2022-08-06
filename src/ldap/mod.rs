@@ -48,12 +48,12 @@ where
     E: LdapDeserializable<R>,
 {
     info!(
-        "searching for in the auth server at '{}' with filter '{}'",
+        "Searching for in the auth server at '{}' with filter '{}'",
         base, filter
     );
     let ldap_result = open_session(config).await;
     if ldap_result.is_err() {
-        error!("failed to connect to the auth server");
+        error!("Failed to connect to the auth server");
         return Err(LdapError::EndOfStream);
     }
     let mut ldap = ldap_result.unwrap();
@@ -61,14 +61,14 @@ where
         .search(base, Scope::Subtree, filter, vec!["*"])
         .await?
         .success();
-    debug!("received a search result");
+    debug!("Received a search result");
     if search_result.is_err() {
         let err = search_result.unwrap_err();
-        error!("retrieved auth error: {:?}", err);
+        error!("Retrieved auth error: {:?}", err);
         return Err(err);
     }
     let search = search_result.unwrap();
-    debug!("looping through {} results", search.0.len());
+    debug!("Looping through {} results", search.0.len());
     let entries = search
         .0
         .iter()
@@ -88,11 +88,11 @@ where
 /// * `config` : the application configuration used for retrieving the ldap server credentials
 async fn open_session(config: &Config) -> Result<Ldap, ()> {
     let ldap_config = &config.ldap;
-    info!("bind to ldap server: {}", ldap_config.server);
+    info!("Bind to ldap server: {}", ldap_config.server);
     let ldap_result = LdapConnAsync::new(&*ldap_config.server).await;
     if ldap_result.is_err() {
         error!(
-            "failed to open ldap session: {:#?}",
+            "Failed to open ldap session: {:#?}",
             ldap_result.err().unwrap()
         );
         return Err(());
@@ -100,10 +100,10 @@ async fn open_session(config: &Config) -> Result<Ldap, ()> {
     let (conn, mut ldap) = ldap_result.unwrap();
     ldap3::drive!(conn);
     if ldap_config.dn.is_none() {
-        warn!("using ldap without user");
+        warn!("Using ldap without user");
     } else {
         let user = ldap_config.dn.as_ref().unwrap();
-        info!("bind ldap user with dn '{}'", user);
+        info!("Bind ldap user with dn '{}'", user);
         let result = ldap
             .simple_bind(
                 &*user,
@@ -111,13 +111,13 @@ async fn open_session(config: &Config) -> Result<Ldap, ()> {
             )
             .await;
         if result.is_err() {
-            error!("failed to bind user: {:#?}", result.err().unwrap())
+            error!("Failed to bind user: {:#?}", result.err().unwrap())
         } else {
             let res = result.as_ref().unwrap();
             let error_option = res.clone().non_error().err();
             if error_option.is_some() {
                 let error = error_option.unwrap();
-                error!("failed to bind({}): {} ({:?})", res.rc, res.text, error);
+                error!("Failed to bind({}): {} ({:?})", res.rc, res.text, error);
             }
         }
     }

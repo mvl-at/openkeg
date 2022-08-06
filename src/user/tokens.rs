@@ -60,13 +60,13 @@ pub fn generate_token(
         exp: expiration.timestamp() as u64,
         ren: renewal,
     };
-    debug!("private key length: {}", &private_key.0.len());
+    debug!("Private key length: {}", &private_key.0.len());
     jsonwebtoken::encode(
         &Header::new(Algorithm::RS512),
         &claims,
         &EncodingKey::from_rsa_der(&private_key.0),
     )
-    .map_err(|e| warn!("encoding error: {}", e))
+    .map_err(|e| warn!("Encoding error: {}", e))
 }
 
 /// Function to validate a jwt token.
@@ -102,18 +102,18 @@ pub fn validate_token(
     );
     if decoded_token.is_err() {
         info!(
-            "cannot validate token: {}",
+            "Cannot validate token: {}",
             decoded_token.err().unwrap().to_string()
         );
         return Err(());
     }
     let claims = decoded_token.unwrap().claims;
     if claims.ren != renewal {
-        info!("tried to use refresh as request token or vice versa");
+        info!("Tried to use refresh as request token or vice versa");
         return Err(());
     }
     info!(
-        "token issued by {} for {} is valid, try to find member",
+        "Token issued by {} for {} is valid, try to find member",
         claims.iss, claims.sub
     );
     members.find(&claims.sub).map(|m| m.clone()).ok_or(())

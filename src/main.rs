@@ -99,7 +99,7 @@ fn register_user_sync_task(server: &Rocket<Build>) {
     let config: Config = server.figment().extract().expect("config");
     let member_state_option = server.state::<MemberStateMutex>();
     if member_state_option.is_none() {
-        warn!("unable to retrieve member state, scheduled user synchronization will not work");
+        warn!("Unable to retrieve member state, scheduled user synchronization will not work");
         return;
     }
     let mut member_state_clone = member_state_option.unwrap().clone();
@@ -118,29 +118,29 @@ fn register_user_sync_task(server: &Rocket<Build>) {
 /// returns: Rocket<Build>
 fn manage_keys(server: Rocket<Build>) -> Rocket<Build> {
     let config: Config = server.figment().extract().expect("config");
-    info!("read the public and the private key");
+    info!("Read the public and the private key");
     let mut server_manage = server;
     let private_key = read_private_key(&config);
     if private_key.is_err() {
         let err = private_key.err().unwrap();
         warn!(
-            "unable to read the private key from {}: {}",
+            "Unable to read the private key from {}: {}",
             config.cert.private_key_path, err
         );
     } else {
         server_manage = server_manage.manage(private_key.unwrap());
-        info!("private key successfully added to application state")
+        info!("Private key successfully added to application state")
     }
     let public_key = read_public_key(&config);
     if public_key.is_err() {
         let err = public_key.err().unwrap();
         warn!(
-            "unable to read the public key from {}: {}",
+            "Unable to read the public key from {}: {}",
             config.cert.public_key_path, err
         );
     } else {
         server_manage = server_manage.manage(public_key.unwrap());
-        info!("public key successfully added to application state")
+        info!("Public key successfully added to application state")
     }
     server_manage
 }

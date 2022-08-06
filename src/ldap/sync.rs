@@ -47,7 +47,7 @@ pub async fn synchronize_members_and_groups(conf: &Config, member_state: &mut Me
         mut executives_vector,
     ) = optionals.unwrap();
 
-    info!("done fetching, begin with transformation");
+    info!("Done fetching, begin with transformation");
     let mut member_state_lock = member_state.write().await;
     fill_primitive_collections(
         &mut member_state_lock,
@@ -57,10 +57,10 @@ pub async fn synchronize_members_and_groups(conf: &Config, member_state: &mut Me
         &mut registers_vector,
         &mut executives_vector,
     );
-    debug!("done with copying data, begin with sorting");
+    debug!("Done with copying data, begin with sorting");
 
     construct_members_by_register(&mut member_state_lock, members_vector, registers_vector);
-    info!("done with user synchronization")
+    info!("Done with user synchronization")
 }
 
 /// Constructs the sorted members by register collection and saves it to the application state.
@@ -128,7 +128,7 @@ async fn fetch_results(
     Vec<Group>,
     Vec<Group>,
 )> {
-    let stop_str = "unable to fetch partial data from the directory server, stop synchronizing";
+    let stop_str = "Unable to fetch partial data from the directory server, stop synchronizing";
     let member_option = fetch_entries::<Member, Member>(
         "members",
         &ldap_conf.member_base,
@@ -214,12 +214,12 @@ where
 {
     let ldap_result = search_entries::<R, E>(base, filter, conf).await;
     if ldap_result.is_err() {
-        warn!("unable to fetch {} from the directory server", typ);
+        warn!("Unable to fetch {} from the directory server", typ);
         return None;
     }
     let ldap_entries = ldap_result.unwrap();
     info!(
-        "successfully received {} {} entries",
+        "Successfully received {} {} entries",
         ldap_entries.len(),
         typ
     );
@@ -239,7 +239,7 @@ pub async fn member_synchronization_task(conf: &Config, member_state: &mut Membe
         tokio::time::interval(Duration::from_secs(conf.ldap.synchronization_interval));
     loop {
         interval.tick().await;
-        info!("running scheduled user synchronization");
+        info!("Running scheduled user synchronization");
         synchronize_members_and_groups(conf, member_state).await;
     }
 }
