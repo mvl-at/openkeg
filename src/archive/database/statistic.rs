@@ -37,6 +37,8 @@ pub async fn count_statistic(
         CountStatisticType::Arrangers => &db_mapping.arrangers_statistic,
         CountStatisticType::Composers => &db_mapping.composers_statistic,
         CountStatisticType::Publishers => &db_mapping.publishers_statistic,
+        CountStatisticType::Locations => &db_mapping.locations_statistic,
+        CountStatisticType::Books => &db_mapping.books_statistic,
     };
     let mut parameters = HashMap::new();
     parameters.insert("group".to_string(), "true".to_string());
