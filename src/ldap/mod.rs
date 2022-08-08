@@ -1,3 +1,7 @@
+use ldap3::{Ldap, LdapConnAsync, LdapError, Scope, SearchEntry};
+
+use crate::Config;
+
 // OpenKeg, the lightweight backend of the Musikverein Leopoldsdorf.
 // Copyright (C) 2022  Richard Stöckl
 //
@@ -16,9 +20,6 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 pub mod auth;
 pub mod sync;
-
-use crate::Config;
-use ldap3::{Ldap, LdapConnAsync, LdapError, Scope, SearchEntry};
 
 /// A trait which ensures the deserialization capability of a struct.
 pub trait LdapDeserializable<T> {
@@ -51,26 +52,16 @@ where
         "Searching for in the auth server at '{}' with filter '{}'",
         base, filter
     );
-    let ldap_result = open_session(config).await;
-    if ldap_result.is_err() {
-        error!("Failed to connect to the auth server");
-        return Err(LdapError::EndOfStream);
-    }
-    let mut ldap = ldap_result.unwrap();
-    let search_result = ldap
+    let mut ldap = open_session(config).await?;
+    let (entries, _search_result) = ldap
         .search(base, Scope::Subtree, filter, vec!["*"])
         .await?
-        .success();
-    debug!("Received a search result");
-    if search_result.is_err() {
-        let err = search_result.unwrap_err();
-        error!("Retrieved auth error: {:?}", err);
-        return Err(err);
-    }
-    let search = search_result.unwrap();
-    debug!("Looping through {} results", search.0.len());
-    let entries = search
-        .0
+        .success()?;
+    debug!(
+        "Received a result, looping through {} entries",
+        entries.len()
+    );
+    let mapped_entries = entries
         .iter()
         .map(|result_entry| {
             let entry = SearchEntry::construct(result_entry.to_owned());
@@ -78,7 +69,7 @@ where
         })
         .collect();
     ldap.unbind().await?;
-    Ok(entries)
+    Ok(mapped_entries)
 }
 
 /// Open the ldap session
@@ -86,21 +77,13 @@ where
 /// # Arguments
 ///
 /// * `config` : the application configuration used for retrieving the ldap server credentials
-async fn open_session(config: &Config) -> Result<Ldap, ()> {
+async fn open_session(config: &Config) -> Result<Ldap, LdapError> {
     let ldap_config = &config.ldap;
     info!("Bind to ldap server: {}", ldap_config.server);
-    let ldap_result = LdapConnAsync::new(&*ldap_config.server).await;
-    if ldap_result.is_err() {
-        error!(
-            "Failed to open ldap session: {:#?}",
-            ldap_result.err().unwrap()
-        );
-        return Err(());
-    }
-    let (conn, mut ldap) = ldap_result.unwrap();
+    let (conn, mut ldap) = LdapConnAsync::new(&*ldap_config.server).await?;
     ldap3::drive!(conn);
     if ldap_config.dn.is_none() {
-        warn!("Using ldap without user");
+        warn!("Using ldap without user, this is not recommended");
     } else {
         let user = ldap_config.dn.as_ref().unwrap();
         info!("Bind ldap user with dn '{}'", user);
@@ -109,17 +92,8 @@ async fn open_session(config: &Config) -> Result<Ldap, ()> {
                 &*user,
                 &*ldap_config.password.as_ref().unwrap_or(&"".to_string()),
             )
-            .await;
-        if result.is_err() {
-            error!("Failed to bind user: {:#?}", result.err().unwrap())
-        } else {
-            let res = result.as_ref().unwrap();
-            let error_option = res.clone().non_error().err();
-            if error_option.is_some() {
-                let error = error_option.unwrap();
-                error!("Failed to bind({}): {} ({:?})", res.rc, res.text, error);
-            }
-        }
+            .await?;
+        result.non_error()?;
     }
     Ok(ldap)
 }
