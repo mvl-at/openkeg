@@ -187,12 +187,12 @@ impl SchemaExample for OperationResponse {
     }
 }
 
-fn request_error<T>() -> Result<T, Error> {
-    Err(Error {
+fn request_error() -> Error {
+    Error {
         err: "Request Error".to_string(),
         msg: Some("The backend is unable to perform the request against the database".to_string()),
         http_status_code: Status::InternalServerError.code,
-    })
+    }
 }
 
 /// Request a resource from the couch database.
@@ -220,38 +220,31 @@ where
     P: Serialize + ?Sized,
     R: DeserializeOwned,
 {
-    let url = format!("{}{}", conf.database.url, api_url);
-    let url_result = Url::parse(&*url);
-    if url_result.is_err() {
+    let url_string = format!("{}{}", conf.database.url, api_url);
+    let url = Url::parse(&*url_string).map_err(|e| {
         warn!(
             "Unable to parse URL '{}' provided by the application: {}",
-            url,
-            url_result.err().unwrap()
+            url_string, e
         );
-        return request_error();
-    }
-    let request_url = url_result.unwrap();
-    debug!("The request URL is: {}", request_url);
-    let request = client.request(method, request_url).query(parameters);
-    let request_result = request_hook(request).build();
-    if request_result.is_err() {
+        request_error()
+    })?;
+    debug!("The request URL is: {}", url);
+    let request_builder = client.request(method, url).query(parameters);
+    let request = request_hook(request_builder).build().map_err(|e| {
         warn!(
             "Unable to build the request provided by the application: {}",
-            request_result.err().unwrap()
+            e
         );
-        return request_error();
-    }
-    let request_success = request_result.unwrap();
-    let request_clone_optional = request_success.try_clone();
-    let response_result = client.execute(request_success).await;
-    if response_result.is_err() {
+        request_error()
+    })?;
+    let request_clone_optional = request.try_clone();
+    let mut response = client.execute(request).await.map_err(|e| {
         warn!(
             "Unable to execute the request provided by the application: {}",
-            response_result.err().unwrap()
+            e
         );
-        return request_error();
-    }
-    let mut response = response_result.unwrap();
+        request_error()
+    })?;
     let mut status = response.status();
     if status == StatusCode::UNAUTHORIZED {
         info!("The session cookie seems to be expired, try to reauthenticate");
@@ -265,46 +258,32 @@ where
                 http_status_code: Status::InternalServerError.code,
             }
         })?;
-        if request_clone_optional.is_none() {
-            return Err(Error {
-                err: "Database Error".to_string(),
-                msg: Some(
-                    "Unable to reproduce the request, you may try again immediately".to_string(),
-                ),
-                http_status_code: Status::ServiceUnavailable.code,
-            });
-        }
-        let response_clone_result = client.execute(request_clone_optional.unwrap()).await;
-        if response_clone_result.is_err() {
+        let request_clone = request_clone_optional.ok_or(Error {
+            err: "Database Error".to_string(),
+            msg: Some("Unable to reproduce the request, you may try again immediately".to_string()),
+            http_status_code: Status::ServiceUnavailable.code,
+        })?;
+        response = client.execute(request_clone).await.map_err(|e| {
             warn!(
                 "Unable to execute the second request provided by the application: {}",
-                response_clone_result.err().unwrap()
+                e
             );
-            return request_error();
-        }
-        response = response_clone_result.unwrap();
+            request_error()
+        })?;
         status = response.status();
     }
     if !status.is_success() {
-        let result = response.json::<CouchError>().await;
-        if result.is_err() {
-            warn!(
-                "Unable to return error to client: {}",
-                result.err().unwrap()
-            );
-            return request_error();
-        }
-        return Err(result.unwrap().into_error(status));
+        let couch_error = response.json::<CouchError>().await.map_err(|e| {
+            warn!("Unable to return error to client: {}", e);
+            request_error()
+        })?;
+        return Err(couch_error.into_error(status));
     }
-    let deserialized_result = response.json::<R>().await;
-    if deserialized_result.is_err() {
-        warn!(
-            "Unable to deserialize a response from the database: {}",
-            deserialized_result.err().unwrap()
-        );
-        return request_error();
-    }
-    Ok(deserialized_result.unwrap())
+    let deserialized_body = response.json::<R>().await.map_err(|e| {
+        warn!("Unable to deserialize a response from the database: {}", e);
+        request_error()
+    })?;
+    Ok(deserialized_body)
 }
 
 /// Checks whether the provided `id` is part of the `partition` ot not.
