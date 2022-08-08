@@ -15,6 +15,8 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+use std::error::Error;
+
 use reqwest::{Client, ClientBuilder, Url};
 use rocket::serde::Serialize;
 
@@ -25,7 +27,7 @@ static KEG_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_P
 /// Initialize the database client and configures it.
 /// If the initialization fails this function will panic.
 /// After the initialization this functions tries to authenticate against the database interface using cookies.
-/// When this fails, a warning will be printed.
+/// When this fails, an error will be printed.
 ///
 /// # Arguments
 ///
@@ -33,21 +35,22 @@ static KEG_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_P
 ///
 /// returns: the configured [`DatabaseClient`]
 pub async fn initialize_client(conf: &Config) -> DatabaseClient {
-    let client_result = ClientBuilder::new()
+    let client = ClientBuilder::new()
         .user_agent(KEG_USER_AGENT)
         .cookie_store(true)
-        .build();
-    if client_result.is_err() {
-        error!(
-            "Unable to initialize http client: {}",
-            client_result.err().unwrap()
-        );
-        panic!();
-    }
-    let client = client_result.unwrap();
+        .build()
+        .map_err(|e| {
+            error!("Unable to initialize http client: {}", e);
+            e
+        })
+        .expect("First database client");
     authenticate(conf, &client)
         .await
-        .expect("authenticated client");
+        .map_err(|e| {
+            error!("Unable to authenticate http client: {}", e);
+            e
+        })
+        .expect("First authenticated client");
     client
 }
 
@@ -75,46 +78,17 @@ impl Credentials {
 /// * `client`: the HTTP client to use, cookie support is required
 ///
 /// returns: ()
-pub(crate) async fn authenticate(conf: &Config, client: &Client) -> Result<(), ()> {
-    let url_result = Url::parse(&*format!(
+pub(crate) async fn authenticate(conf: &Config, client: &Client) -> Result<(), Box<dyn Error>> {
+    let url = Url::parse(&*format!(
         "{}{}",
         conf.database.url, conf.database.database_mapping.authentication
-    ));
-    if url_result.is_err() {
-        warn!(
-            "Unable to parse the authentication url: {}",
-            url_result.err().unwrap()
-        );
-        return Err(());
-    }
-    let request_result = client
-        .post(url_result.unwrap())
+    ))?;
+    let request = client
+        .post(url)
         .form(&Credentials::from_config(conf))
-        .build();
-    if request_result.is_err() {
-        warn!(
-            "Unable to build the authentication request: {}",
-            request_result.err().unwrap()
-        );
-        return Err(());
-    }
-    let response_result = client.execute(request_result.unwrap()).await;
-    if response_result.is_err() {
-        warn!(
-            "Unable to execute authentication request: {}",
-            response_result.err().unwrap()
-        );
-        return Err(());
-    }
-    let response = response_result.unwrap();
-    if response.status().is_client_error() || response.status().is_server_error() {
-        warn!(
-            "Unable to authenticate, the server returned: {}",
-            response.status()
-        );
-        Err(())
-    } else {
-        info!("Authentication to the database interface was successful");
-        Ok(())
-    }
+        .build()?;
+    let response = client.execute(request).await?;
+    response.error_for_status()?;
+    info!("Authentication to the database interface was successful");
+    Ok(())
 }

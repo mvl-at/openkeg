@@ -255,16 +255,16 @@ where
     let mut status = response.status();
     if status == StatusCode::UNAUTHORIZED {
         info!("The session cookie seems to be expired, try to reauthenticate");
-        let auth_result = authenticate(conf, client).await;
-        if auth_result.is_err() {
-            return Err(Error {
+        authenticate(conf, client).await.map_err(|e| {
+            warn!("Unable to re-authenticate to the database: {}", e);
+            Error {
                 err: "Database Error".to_string(),
                 msg: Some(
                     "Cannot connect to the database, please contact the administrator".to_string(),
                 ),
                 http_status_code: Status::InternalServerError.code,
-            });
-        }
+            }
+        })?;
         if request_clone_optional.is_none() {
             return Err(Error {
                 err: "Database Error".to_string(),
