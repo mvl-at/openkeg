@@ -237,7 +237,7 @@ pub async fn get_book_content(
     client: &Client,
     book: String,
 ) -> Result<FindResponse<Score>> {
-    let result = search_scores(
+    let mut response = search_scores(
         conf,
         client,
         None,
@@ -250,11 +250,7 @@ pub async fn get_book_content(
         0xffff,
         None,
     )
-    .await;
-    if result.is_err() {
-        return result;
-    }
-    let mut response = result.unwrap();
+    .await?;
     let scores = &mut response.docs;
     sort_by_book_page(&book, scores);
     Ok(response)
@@ -293,11 +289,10 @@ fn construct_filter(
         let book_criteria = json!({"$elemMatch": {"book": book.unwrap()}});
         and_criteria.insert("pages".to_string(), book_criteria);
     }
-    if location.is_some() {
-        and_criteria.insert("location".to_string(), Value::String(location.unwrap()));
+    if let Some(l) = location {
+        and_criteria.insert("location".to_string(), Value::String(l));
     }
-    if search_term.is_some() {
-        let term = search_term.unwrap();
+    if let Some(term) = search_term {
         attributes.iter().for_each(|a| {
             let key = a.to_string().to_lowercase();
             let value = if a.is_array() {
