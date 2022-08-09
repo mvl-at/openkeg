@@ -293,12 +293,12 @@ where
 /// * `id`: the id to check
 /// * `partition`: the partition which could contain the `id`
 ///
-/// returns: Option<Error>
-fn check_document_partition(id: &str, partition: &str) -> Option<Error> {
+/// returns: Result<(), Error>
+fn check_document_partition(id: &str, partition: &str) -> Result<(), Error> {
     if id.starts_with(format!("{}:", partition).as_str()) {
-        None
+        Ok(())
     } else {
-        Some(Error {
+        Err(Error {
             err: "invalid id".to_string(),
             msg: Some("the provided id starts with an invalid partition".to_string()),
             http_status_code: Status::UnprocessableEntity.code,

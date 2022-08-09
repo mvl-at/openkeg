@@ -117,10 +117,7 @@ pub async fn search_scores(
 ///
 /// returns: Result<Json<Score>, Error>
 pub async fn get_score(conf: &Config, client: &Client, id: String) -> Result<Score> {
-    let id_result = check_document_partition(&id, &conf.database.score_partition);
-    if id_result.is_some() {
-        return Err(id_result.unwrap());
-    }
+    check_document_partition(&id, &conf.database.score_partition)?;
     let parameters: HashMap<String, String> = HashMap::new();
     request(
         conf,
@@ -155,11 +152,7 @@ pub async fn put_score<'de>(conf: &Config, client: &Client, mut score: Score) ->
     }
     let mut couch_id = score.couch_id.clone();
     if score.couch_id.is_some() {
-        let id_result =
-            check_document_partition(&couch_id.unwrap(), &conf.database.score_partition);
-        if id_result.is_some() {
-            return Err(id_result.unwrap());
-        }
+        check_document_partition(&couch_id.unwrap(), &conf.database.score_partition)?;
     } else {
         score.couch_id = Some(generate_document_id(&conf.database.score_partition));
     }
@@ -198,10 +191,7 @@ pub async fn delete_score(
     id: String,
     rev: String,
 ) -> Result<OperationResponse> {
-    let id_result = check_document_partition(&id, &conf.database.score_partition);
-    if id_result.is_some() {
-        return Err(id_result.unwrap());
-    }
+    check_document_partition(&id, &conf.database.score_partition)?;
     let mut parameters: HashMap<String, String> = HashMap::new();
     parameters.insert("rev".to_string(), rev);
     request(
