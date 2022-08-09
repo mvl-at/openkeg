@@ -69,20 +69,6 @@ pub struct Score {
     pub pages: Vec<Page>,
 }
 
-/// A book which contains scores as pages.
-#[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(crate = "rocket::serde", rename_all = "camelCase")]
-#[schemars(example = "Self::example")]
-pub struct Book {
-    /// The id of the book.
-    #[serde(skip_deserializing)]
-    pub id: Option<i64>,
-    /// Full name of the book.
-    pub name: String,
-    /// Annotation of the book.
-    pub annotation: Option<String>,
-}
-
 /// A page which represents where a particular score is located in a book.
 /// A page can only contain one score at maximum.
 /// When a page contains multiple scores, only the first one will be stored here.
@@ -98,21 +84,6 @@ pub struct Page {
     /// The number where the page ends at.
     /// The page ends at `begin` if absent.
     pub end: Option<PageNumber>,
-}
-
-/// A representation of a page during its insert or update in the context of a book.
-/// The basic rules of [Page] apply here too as this is only a different representation.
-#[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(crate = "rocket::serde", rename_all = "camelCase")]
-#[schemars(example = "Self::example")]
-pub struct PagePlacement {
-    /// The number where the page begins at.
-    pub begin: PageNumber,
-    /// The number where the page ends at.
-    /// The page ends at `begin` if absent.
-    pub end: Option<PageNumber>,
-    /// The id of the [Score] which is places at this page.
-    pub score: i64,
 }
 
 /// A page-number.
@@ -207,26 +178,6 @@ impl SchemaExample for Page {
             book: "Rot".to_string(),
             begin: Default::default(),
             end: None,
-        }
-    }
-}
-
-impl SchemaExample for PagePlacement {
-    fn example() -> Self {
-        Self {
-            score: 3,
-            begin: Default::default(),
-            end: Default::default(),
-        }
-    }
-}
-
-impl SchemaExample for Book {
-    fn example() -> Self {
-        Self {
-            id: Some(5),
-            name: "Rot".to_string(),
-            annotation: Some("New covers".to_string()),
         }
     }
 }
