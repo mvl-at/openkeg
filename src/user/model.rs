@@ -68,7 +68,7 @@ impl<'r> FromRequest<'r> for BasicAuth {
             return Failure((Status::BadRequest, ()));
         }
         let user_password_pair = user_password_pair_result.unwrap();
-        let mut parts = user_password_pair.splitn(2, ":");
+        let mut parts = user_password_pair.splitn(2, ':');
         let username = parts.next();
         let password = parts.next();
         if username.is_none() || password.is_none() {

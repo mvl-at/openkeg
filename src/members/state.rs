@@ -43,12 +43,10 @@ pub trait Repository<ID, E> {
 
 impl Repository<String, Member> for AllMembers {
     fn find(&self, id: &String) -> Option<&Member> {
-        self.iter()
-            .filter(|m| {
-                m.username.eq_ignore_ascii_case(id)
-                    || m.mail.iter().any(|mail| mail.eq_ignore_ascii_case(id))
-            })
-            .next()
+        self.iter().find(|m| {
+            m.username.eq_ignore_ascii_case(id)
+                || m.mail.iter().any(|mail| mail.eq_ignore_ascii_case(id))
+        })
     }
 }
 

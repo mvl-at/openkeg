@@ -230,8 +230,7 @@ impl WebMemberSensitives {
             address: member
                 .address
                 .as_ref()
-                .clone()
-                .map(|a| WebAddress::from_address(a)),
+                .map(WebAddress::from_address),
         }
     }
 }
@@ -371,14 +370,12 @@ impl LdapDeserializable<Option<Address>> for Address {
         let mapping = &config.ldap.address_mapping;
         if !contains_all(
             attrs,
-            &vec![
-                mapping.country_code.to_string(),
+            &[mapping.country_code.to_string(),
                 mapping.postal_code.to_string(),
                 mapping.city.to_string(),
                 mapping.house_number.to_string(),
                 mapping.state.to_string(),
-                mapping.street.to_string(),
-            ],
+                mapping.street.to_string()],
         ) {
             return None;
         }
@@ -427,7 +424,7 @@ impl Ord for Group {
 ///
 /// * `attribute` : the attribute whose value should be extracted from the map
 /// * `attrs` : the map of the attributes with the corresponding values
-fn string_or_blank(attribute: &String, attrs: &HashMap<String, Vec<String>>) -> Vec<String> {
+fn string_or_blank(attribute: &str, attrs: &HashMap<String, Vec<String>>) -> Vec<String> {
     attrs
         .get(attribute)
         .unwrap_or(&vec!["".to_string()])
@@ -440,7 +437,7 @@ fn string_or_blank(attribute: &String, attrs: &HashMap<String, Vec<String>>) -> 
 ///
 /// * `attribute` : the attribute whose value should be extracted from the map
 /// * `attrs` : the map of the attributes with the corresponding values
-fn string_or_empty(attribute: &String, attrs: &HashMap<String, Vec<String>>) -> Vec<String> {
+fn string_or_empty(attribute: &str, attrs: &HashMap<String, Vec<String>>) -> Vec<String> {
     attrs.get(attribute).unwrap_or(&vec![]).clone()
 }
 
@@ -450,7 +447,7 @@ fn string_or_empty(attribute: &String, attrs: &HashMap<String, Vec<String>>) -> 
 ///
 /// * `attribute` : the attribute whose value should be extracted from the map
 /// * `attrs` : the map of the attributes with the corresponding values
-fn bool_or_false(attribute: &String, attrs: &HashMap<String, Vec<String>>) -> bool {
+fn bool_or_false(attribute: &str, attrs: &HashMap<String, Vec<String>>) -> bool {
     attrs.get(attribute).unwrap_or(&vec!["".to_string()])[0].eq_ignore_ascii_case("true")
 }
 
@@ -460,7 +457,7 @@ fn bool_or_false(attribute: &String, attrs: &HashMap<String, Vec<String>>) -> bo
 ///
 /// * `map` : the map which should contain all the keys
 /// * `keys` : a vector of all the required keys
-fn contains_all<K, V>(map: &HashMap<K, V>, keys: &Vec<K>) -> bool
+fn contains_all<K, V>(map: &HashMap<K, V>, keys: &[K]) -> bool
 where
     K: Hash + Eq,
 {

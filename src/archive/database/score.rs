@@ -50,7 +50,7 @@ pub async fn all_scores(
         &parameters,
     )
     .await
-    .map(|r| Json(r))
+    .map(Json)
 }
 
 /// The service function to search for scores according to the given criteria.
@@ -359,7 +359,7 @@ fn no_op<'a, E>() -> Box<dyn FnOnce(E) -> E + Send + 'a> {
 ///
 /// * `book`: the book to use for the pages
 /// * `scores`: the scores to sort
-fn sort_by_book_page(book: &String, scores: &mut Vec<Score>) {
+fn sort_by_book_page(book: &str, scores: &mut Vec<Score>) {
     scores.sort_by(|score_a, score_b| {
         let page_opt_a = score_a
             .pages

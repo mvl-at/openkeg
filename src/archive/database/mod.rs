@@ -213,7 +213,7 @@ async fn request<'a, R, P>(
     client: &Client,
     request_hook: Box<dyn FnOnce(RequestBuilder) -> RequestBuilder + Send + 'a>,
     method: Method,
-    api_url: &String,
+    api_url: &str,
     parameters: &P,
 ) -> Result<R, Error>
 where
@@ -294,7 +294,7 @@ where
 /// * `partition`: the partition which could contain the `id`
 ///
 /// returns: Option<Error>
-fn check_document_partition(id: &String, partition: &String) -> Option<Error> {
+fn check_document_partition(id: &str, partition: &str) -> Option<Error> {
     if id.starts_with(format!("{}:", partition).as_str()) {
         None
     } else {
@@ -314,6 +314,6 @@ fn check_document_partition(id: &String, partition: &String) -> Option<Error> {
 /// * `partition`: the partition to generate the id for
 ///
 /// returns: String
-fn generate_document_id(partition: &String) -> String {
+fn generate_document_id(partition: &str) -> String {
     format!("{}:{}", partition, Uuid::new_v4())
 }

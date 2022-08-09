@@ -87,7 +87,7 @@ pub fn generate_token(
 ///
 /// returns: Result<Member, ()>
 pub fn validate_token(
-    token: &String,
+    token: &str,
     renewal: bool,
     members: &AllMembers,
     public_key: &PublicKey,
@@ -116,5 +116,5 @@ pub fn validate_token(
         "Token issued by {} for {} is valid, try to find member",
         claims.iss, claims.sub
     );
-    members.find(&claims.sub).map(|m| m.clone()).ok_or(())
+    members.find(&claims.sub).cloned().ok_or(())
 }

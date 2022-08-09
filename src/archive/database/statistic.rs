@@ -55,5 +55,5 @@ pub async fn count_statistic(
         &parameters,
     )
     .await
-    .map(|r| Json(r))
+    .map(Json)
 }

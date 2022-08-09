@@ -31,7 +31,7 @@ use rocket_okapi::settings::OpenApiSettings;
 use rocket_okapi::{mount_endpoints_and_merged_docs, swagger_ui::*};
 
 use crate::config::Config;
-use crate::cors::CORS;
+use crate::cors::Cors;
 use crate::database::initialize_client;
 use crate::ldap::auth;
 use crate::ldap::sync::member_synchronization_task;
@@ -61,7 +61,7 @@ async fn main() {
     let figment = config::read_config();
     let member_state = MemberState::mutex();
     let mut server_result = create_server(figment).manage(member_state);
-    server_result = manage_keys(server_result).attach(CORS);
+    server_result = manage_keys(server_result).attach(Cors);
     let config = server_result.figment().extract::<Config>().expect("config");
     server_result = server_result.manage(initialize_client(&config).await);
     register_user_sync_task(&server_result);

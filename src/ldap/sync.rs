@@ -35,7 +35,7 @@ use crate::MemberStateMutex;
 /// * `member_state` the mutex of the current member state which should be altered
 pub async fn synchronize_members_and_groups(conf: &Config, member_state: &mut MemberStateMutex) {
     let ldap_conf = &conf.ldap;
-    let optionals = fetch_results(conf, &ldap_conf).await;
+    let optionals = fetch_results(conf, ldap_conf).await;
     if optionals.is_none() {
         return;
     }
@@ -203,12 +203,7 @@ async fn fetch_results(
 /// * `base` : the base dn to search in
 /// * `filter` : the auth filter to use during search
 /// * `conf` : the application configuration
-async fn fetch_entries<R, E>(
-    typ: &str,
-    base: &String,
-    filter: &String,
-    conf: &Config,
-) -> Option<Vec<R>>
+async fn fetch_entries<R, E>(typ: &str, base: &str, filter: &str, conf: &Config) -> Option<Vec<R>>
 where
     E: LdapDeserializable<R>,
 {

@@ -21,23 +21,12 @@ use figment::{
 };
 use rocket::serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     pub ldap: LdapConfig,
     pub jwt: JwtConfig,
     pub cert: CertConfig,
     pub database: DatabaseConfig,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Config {
-            ldap: Default::default(),
-            jwt: Default::default(),
-            cert: Default::default(),
-            database: Default::default(),
-        }
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

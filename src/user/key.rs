@@ -34,7 +34,7 @@ pub struct PublicKey(pub(crate) Vec<u8>);
 ///
 /// returns: Result<PrivateKey, Error>
 pub fn read_private_key(config: &Config) -> Result<PrivateKey, Error> {
-    fs::read(&config.cert.private_key_path).map(|k| PrivateKey(k))
+    fs::read(&config.cert.private_key_path).map(PrivateKey)
 }
 
 /// Reads the public key from the file whose path is provided in the application configuration.
@@ -45,5 +45,5 @@ pub fn read_private_key(config: &Config) -> Result<PrivateKey, Error> {
 ///
 /// returns: Result<PublicKey, Error>
 pub fn read_public_key(config: &Config) -> Result<PublicKey, Error> {
-    fs::read(&config.cert.public_key_path).map(|k| PublicKey(k))
+    fs::read(&config.cert.public_key_path).map(PublicKey)
 }

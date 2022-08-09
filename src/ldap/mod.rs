@@ -41,8 +41,8 @@ pub trait LdapDeserializable<T> {
 /// * `config` : the application configuration
 ///
 pub async fn search_entries<R, E>(
-    base: &String,
-    filter: &String,
+    base: &str,
+    filter: &str,
     config: &Config,
 ) -> Result<Vec<R>, LdapError>
 where

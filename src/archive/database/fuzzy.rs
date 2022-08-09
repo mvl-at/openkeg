@@ -31,7 +31,7 @@ mod fuzzy_tests;
 pub fn fuzzy_regex(term: String) -> String {
     term.chars()
         .map(|c| {
-            let next = ALPHABET_CLASSES.iter().filter(|cl| cl.contains(c)).next();
+            let next = ALPHABET_CLASSES.iter().find(|cl| cl.contains(c));
 
             let chars = next.map(|cl| format!("[{}]{}", cl, SPECIALS)).unwrap_or({
                 if NUMBERS.contains(c) {
@@ -46,7 +46,7 @@ pub fn fuzzy_regex(term: String) -> String {
         .join("")
 }
 
-const ALPHABET_CLASSES: &'static [&'static str] = &[
+const ALPHABET_CLASSES: &[&str] = &[
     "aàáâãäåæAÀÁÂÃÄÅÆ",
     "bB",
     "cçćĉčCÇĆĈČ",
