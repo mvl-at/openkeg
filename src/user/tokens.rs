@@ -16,6 +16,7 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 use chrono::Duration;
+use jsonwebtoken::errors::{Error, ErrorKind};
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use rocket::serde::{Deserialize, Serialize};
 
@@ -91,30 +92,30 @@ pub fn validate_token(
     renewal: bool,
     members: &AllMembers,
     public_key: &PublicKey,
-) -> Result<Member, ()> {
+) -> Result<Member, Error> {
     let mut validation = Validation::default();
     validation.set_required_spec_claims(&["iss", "sub", "ren", "exp"]);
     validation.algorithms = vec![Algorithm::RS512];
-    let decoded_token = jsonwebtoken::decode::<Claims>(
+    let claims = jsonwebtoken::decode::<Claims>(
         token,
         &DecodingKey::from_rsa_der(&public_key.0),
         &validation,
-    );
-    if decoded_token.is_err() {
-        info!(
-            "Cannot validate token: {}",
-            decoded_token.err().unwrap().to_string()
-        );
-        return Err(());
-    }
-    let claims = decoded_token.unwrap().claims;
+    )
+    .map_err(|e| {
+        info!("Cannot validate token: {}", e);
+        e
+    })?
+    .claims;
     if claims.ren != renewal {
         info!("Tried to use refresh as request token or vice versa");
-        return Err(());
+        return Err(Error::from(ErrorKind::InvalidToken));
     }
     info!(
         "Token issued by {} for {} is valid, try to find member",
         claims.iss, claims.sub
     );
-    members.find(&claims.sub).cloned().ok_or(())
+    members
+        .find(&claims.sub)
+        .cloned()
+        .ok_or_else(|| Error::from(ErrorKind::InvalidToken))
 }
