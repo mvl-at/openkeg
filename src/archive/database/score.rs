@@ -21,6 +21,7 @@ use std::collections::HashMap;
 use reqwest::{Client, Method};
 use rocket::http::Status;
 use rocket::serde::json::Json;
+use schemars::JsonSchema;
 use serde_json::{json, Value};
 
 use crate::api_result::{Error, Result};
@@ -53,6 +54,29 @@ pub async fn all_scores(
     .map(Json)
 }
 
+/// The parameters used to search scores.
+#[derive(FromForm, JsonSchema)]
+pub struct ScoreSearchParameters {
+    /// A string to search for in the specified `attributes`.
+    search_term: Option<String>,
+    /// If `true` the `search_term` will be interpreted as a regular expression instead of a fuzzy search term.
+    regex: Option<bool>,
+    /// The attributes to search for.
+    attributes: Vec<ScoreSearchTermField>,
+    /// If set, the score must contain a page with exactly this book.
+    book: Option<String>,
+    /// If set, the score must be have set a location with exact this string.
+    location: Option<String>,
+    /// The field which should be used to sort the results (database relative, not page).
+    sort: Option<ScoreSearchTermField>,
+    /// If unset or `true` the results will be sorted ascending, descending otherwise.
+    ascending: Option<bool>,
+    /// The limit of documents for a result page.
+    limit: u64,
+    /// The bookmark used for pagination.
+    bookmark: Option<String>,
+}
+
 /// The service function to search for scores according to the given criteria.
 /// All criteria are chained with the `$and` operator.
 ///
@@ -60,41 +84,15 @@ pub async fn all_scores(
 ///
 /// * `conf`: the application configuration
 /// * `client`: the client to send the requests with
-/// * `search_term`: the term to search for, if `None` all `attributes` will be ignored
-/// * `regex`: `Some(true)` if `search_term` should be interpreted as regex, otherwise it will be interpreted as a fuzzy search term
-/// * `attributes`: the attributes to search for `search_term`
-/// * `book`: the book to search for
-/// * `location`: the location to search for
-/// * `sort`: the attribute to define the order for
-/// * `ascending`: `Some(false)` if the order should be descending, ascending otherwise
-/// * `limit`: the limit of the amount of results to return
-/// * `bookmark`: the bookmark using for pagination
+/// * `parameters`: the parameters to perform the search
 ///
 /// returns: Result<Json<FindResponse<Score>>, Error>
 pub async fn search_scores(
     conf: &Config,
     client: &Client,
-    search_term: Option<String>,
-    regex: Option<bool>,
-    attributes: Vec<ScoreSearchTermField>,
-    book: Option<String>,
-    location: Option<String>,
-    sort: Option<ScoreSearchTermField>,
-    ascending: Option<bool>,
-    limit: u64,
-    bookmark: Option<String>,
+    parameters: ScoreSearchParameters,
 ) -> Result<FindResponse<Score>> {
-    let filter = construct_filter(
-        search_term,
-        regex,
-        attributes,
-        book,
-        location,
-        sort,
-        ascending,
-        limit,
-        bookmark,
-    );
+    let filter = construct_filter(parameters);
     debug!("Using filter to search scores: {}", filter);
     let parameters: HashMap<String, String> = HashMap::new();
     request(
@@ -240,15 +238,17 @@ pub async fn get_book_content(
     let mut response = search_scores(
         conf,
         client,
-        None,
-        None,
-        vec![],
-        Some(book.clone()),
-        None,
-        None,
-        None,
-        0xffff,
-        None,
+        ScoreSearchParameters {
+            search_term: None,
+            regex: None,
+            attributes: vec![],
+            book: Some(book.clone()),
+            location: None,
+            sort: None,
+            ascending: None,
+            limit: 0xffff,
+            bookmark: None,
+        },
     )
     .await?;
     let scores = &mut response.docs;
@@ -260,51 +260,33 @@ pub async fn get_book_content(
 ///
 /// # Arguments
 ///
-/// * `search_term`: the term to search for, if `None` all `attributes` will be ignored
-/// * `regex`: `Some(true)` if `search_term` should be interpreted as regex, otherwise it will be interpreted as a fuzzy search term
-/// * `attributes`: the attributes to search for `search_term`
-/// * `book`: the book to search for
-/// * `location`: the location to search for
-/// * `sort`: the attribute to define the order for
-/// * `ascending`: `Some(false)` if the order should be descending, ascending otherwise
-/// * `limit`: the limit of the amount of results to return
-/// * `bookmark`: the bookmark using for pagination
+/// * `parameters`: the parameters to construct the json value filter for
 ///
 /// returns: Value
-fn construct_filter(
-    search_term: Option<String>,
-    regex: Option<bool>,
-    attributes: Vec<ScoreSearchTermField>,
-    book: Option<String>,
-    location: Option<String>,
-    sort: Option<ScoreSearchTermField>,
-    ascending: Option<bool>,
-    limit: u64,
-    bookmark: Option<String>,
-) -> Value {
-    let sort_value = sort.map(|s| json!([{s.to_string().to_lowercase().as_str(): if ascending.unwrap_or(true) {"asc"} else {"desc}"}}])).unwrap_or(json!([]));
+fn construct_filter(parameters: ScoreSearchParameters) -> Value {
+    let sort_value = parameters.sort.map(|s| json!([{s.to_string().to_lowercase().as_str(): if parameters.ascending.unwrap_or(true) {"asc"} else {"desc}"}}])).unwrap_or(json!([]));
     let mut and_criteria = HashMap::new();
     let mut search_term_criteria = vec![];
-    if book.is_some() {
-        let book_criteria = json!({"$elemMatch": {"book": book.unwrap()}});
+    if let Some(book) = parameters.book {
+        let book_criteria = json!({"$elemMatch": {"book": book}});
         and_criteria.insert("pages".to_string(), book_criteria);
     }
-    if let Some(l) = location {
+    if let Some(l) = parameters.location {
         and_criteria.insert("location".to_string(), Value::String(l));
     }
-    if let Some(term) = search_term {
-        attributes.iter().for_each(|a| {
+    if let Some(term) = parameters.search_term {
+        parameters.attributes.iter().for_each(|a| {
             let key = a.to_string().to_lowercase();
             let value = if a.is_array() {
                 json!({key: {
                         "$elemMatch": {
-                            "$regex": term_from_regex(term.clone(), &regex)
+                            "$regex": term_from_regex(term.clone(), &parameters.regex)
                         }
                     }
                 })
             } else {
                 json!({key: {
-                        "$regex": term_from_regex(term.clone(), &regex)
+                        "$regex": term_from_regex(term.clone(), &parameters.regex)
                 }})
             };
             search_term_criteria.push(value);
@@ -317,8 +299,8 @@ fn construct_filter(
         "stable": true,
         "skip": 0,
         "execution_stats": true,
-        "bookmark": bookmark,
-        "limit": limit,
+        "bookmark": parameters.bookmark,
+        "limit": parameters.limit,
     })
 }
 

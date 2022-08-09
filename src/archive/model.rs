@@ -128,21 +128,6 @@ pub struct PageNumber {
     pub suffix: Option<String>,
 }
 
-/// Search parameters for a score search.
-/// This consists of a search-term, the fields to search for,
-/// whether the results should be ascending or not and the order of the results.
-#[derive(JsonSchema, FromForm, Debug)]
-pub struct ScoreSearchParameters {
-    /// The search term.
-    pub term: String,
-    /// The fields where to search.
-    pub fields: Vec<ScoreSearchTermField>,
-    /// `true` if the results should be ordered ascending, `false` otherwise.
-    pub ascending: Option<bool>,
-    /// The field which specifies the ordering of the results.
-    pub order: Option<ScoreSearchTermField>,
-}
-
 /// Representation of a score field which can be used in a search.
 #[derive(Debug, Serialize, Deserialize, JsonSchema, FromFormField)]
 #[serde(crate = "rocket::serde", rename_all = "camelCase")]

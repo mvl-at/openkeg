@@ -22,9 +22,9 @@ use rocket_okapi::openapi;
 
 use crate::api_result::Result;
 use crate::archive::database;
-use crate::archive::database::score::all_scores;
+use crate::archive::database::score::{all_scores, ScoreSearchParameters};
 use crate::archive::database::{FindResponse, OperationResponse, Pagination};
-use crate::archive::model::{Score, ScoreSearchTermField};
+use crate::archive::model::Score;
 use crate::Config;
 
 /// Get all scores from the database with pagination.
@@ -53,48 +53,19 @@ pub async fn get_scores(
 ///
 /// # Arguments
 ///
-/// * `search_term`: a string to search for in the specified `attributes`
-/// * `regex`: if `true` the `search_term` will be interpreted as a regular expression instead of a fuzzy search term
-/// * `attributes`: the attributes to search for
-/// * `book`: if set, the score must contain a page with exactly this book
-/// * `location`: if set, the score must be have set a location with exact this string
-/// * `sort`: the field which should be used to sort the results (database relative, not page)
-/// * `ascending`: is unset or `true` the results will be sorted ascending, descending otherwise
-/// * `limit`: the limit of documents for a result page
-/// * `bookmark`: the bookmark used for pagination
+/// * `parameters`: the parameters to perform the search
+/// * `conf`: the application configuration
+/// * `client`: the http client to perform the database query
 ///
 /// returns: Result<Json<FindResponse<Score>>, Error>
 #[openapi(tag = "Archive")]
-#[get(
-"/searches?<search_term>&<regex>&<attributes>&<book>&<location>&<sort>&<ascending>&<limit>&<bookmark>"
-)]
+#[get("/searches?<parameters..>")]
 pub async fn search_scores(
-    search_term: Option<String>,
-    regex: Option<bool>,
-    attributes: Vec<ScoreSearchTermField>,
-    book: Option<String>,
-    location: Option<String>,
-    sort: Option<ScoreSearchTermField>,
-    ascending: Option<bool>,
-    limit: u64,
-    bookmark: Option<String>,
+    parameters: ScoreSearchParameters,
     conf: &State<Config>,
     client: &State<Client>,
 ) -> Result<FindResponse<Score>> {
-    database::score::search_scores(
-        conf,
-        client,
-        search_term,
-        regex,
-        attributes,
-        book,
-        location,
-        sort,
-        ascending,
-        limit,
-        bookmark,
-    )
-    .await
+    database::score::search_scores(conf, client, parameters).await
 }
 
 /// Find a single score by its id.
