@@ -120,27 +120,25 @@ fn manage_keys(server: Rocket<Build>) -> Rocket<Build> {
     let config: Config = server.figment().extract().expect("config");
     info!("Read the public and the private key");
     let mut server_manage = server;
-    let private_key = read_private_key(&config);
-    if private_key.is_err() {
-        let err = private_key.err().unwrap();
-        warn!(
+    match read_private_key(&config) {
+        Ok(private_key) => {
+            server_manage = server_manage.manage(private_key);
+            info!("Private key successfully added to application state");
+        }
+        Err(err) => warn!(
             "Unable to read the private key from {}: {}",
             config.cert.private_key_path, err
-        );
-    } else {
-        server_manage = server_manage.manage(private_key.unwrap());
-        info!("Private key successfully added to application state")
+        ),
     }
-    let public_key = read_public_key(&config);
-    if public_key.is_err() {
-        let err = public_key.err().unwrap();
-        warn!(
+    match read_public_key(&config) {
+        Ok(public_key) => {
+            server_manage = server_manage.manage(public_key);
+            info!("Public key successfully added to application state");
+        }
+        Err(err) => warn!(
             "Unable to read the public key from {}: {}",
             config.cert.public_key_path, err
-        );
-    } else {
-        server_manage = server_manage.manage(public_key.unwrap());
-        info!("Public key successfully added to application state")
+        ),
     }
     server_manage
 }
