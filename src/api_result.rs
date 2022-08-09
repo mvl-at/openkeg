@@ -115,7 +115,7 @@ impl std::error::Error for Error {}
 impl<'r> Responder<'r, 'static> for Error {
     fn respond_to(self, _: &'r Request<'_>) -> response::Result<'static> {
         // Convert object to json
-        let body = serde_json::to_string(&self).unwrap();
+        let body = serde_json::to_string(&self).expect("Error body");
         Response::build()
             .sized_body(body.len(), std::io::Cursor::new(body))
             .header(ContentType::JSON)

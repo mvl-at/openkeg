@@ -52,7 +52,7 @@ impl<'r> FromRequest<'r> for BasicAuth {
             debug!("Skip credentials");
             return Forward(());
         }
-        let authorization = String::from(authorization_option.unwrap());
+        let authorization = String::from(authorization_option.expect("Authorization header"));
         if !authorization.starts_with("Basic ") {
             debug!("Header does not start with basic");
             return Forward(());
@@ -62,12 +62,8 @@ impl<'r> FromRequest<'r> for BasicAuth {
             debug!("Cannot base64 decode credentials");
             return Failure((Status::BadRequest, ()));
         }
-        let user_password_pair_result = String::from_utf8(result.unwrap());
-        if user_password_pair_result.is_err() {
-            debug!("Credentials are not valid UTF-8");
-            return Failure((Status::BadRequest, ()));
-        }
-        let user_password_pair = user_password_pair_result.unwrap();
+        let user_password_bytes = result.expect("Base64 decoded password");
+        let user_password_pair = String::from_utf8_lossy(user_password_bytes.as_slice());
         let mut parts = user_password_pair.splitn(2, ':');
         let username = parts.next();
         let password = parts.next();
@@ -76,8 +72,8 @@ impl<'r> FromRequest<'r> for BasicAuth {
             return Failure((Status::BadRequest, ()));
         }
         let basic_auth = BasicAuth {
-            username: username.unwrap().to_string(),
-            password: password.unwrap().to_string(),
+            username: username.expect("Decoded username").to_string(),
+            password: password.expect("Decoded password").to_string(),
         };
         Success(basic_auth)
     }
@@ -117,7 +113,7 @@ impl<'r> FromRequest<'r> for Member {
             debug!("Request does not contain Authorization header");
             return Forward(());
         }
-        let bearer = String::from(auth_header.unwrap());
+        let bearer = String::from(auth_header.expect("Authentication header"));
         if !bearer.starts_with("Bearer ") {
             debug!("Token does not start with Bearer");
             return Forward(());
@@ -133,13 +129,18 @@ impl<'r> FromRequest<'r> for Member {
             warn!("Unable to retrieve public key, requests using authentication will not work");
             return Forward(());
         }
-        let all_members = members.unwrap().read().await;
-        let member = validate_token(&token, false, &all_members.all_members, public_key.unwrap());
+        let all_members = members.expect("Member read lock").read().await;
+        let member = validate_token(
+            &token,
+            false,
+            &all_members.all_members,
+            public_key.expect("Public key"),
+        );
         if member.is_err() {
             debug!("Token was invalid");
             return Failure((Status::Unauthorized, ()));
         }
-        Success(member.unwrap())
+        Success(member.expect("Extracted Member from token"))
     }
 }
 
