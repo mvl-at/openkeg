@@ -51,36 +51,39 @@ pub async fn login(
     member_state: &State<MemberStateMutex>,
 ) -> AuthenticationResponder {
     let mut member_state_clone = member_state.inner().clone();
-    let member_result = authenticate(
+    authenticate(
         config,
         &mut member_state_clone,
         &auth.username,
         &auth.password,
     )
-    .await;
-    if member_result.is_ok() {
-        let member = member_result.unwrap();
-        debug!("Authenticated user: {}", member.username);
-        let (request_token, renewal_token) = (
-            generate_token(&member, true, config, private_key),
-            generate_token(&member, false, config, private_key),
-        );
-        debug!(
-            "Generated tokens {:?} and {:?}",
-            request_token, renewal_token
-        );
-        AuthenticationResponder {
-            request_token: request_token.ok(),
-            renewal_token: renewal_token.ok(),
-            request_token_required: true,
-            renewal_token_required: true,
-        }
-    } else {
-        AuthenticationResponder {
-            request_token: None,
-            renewal_token: None,
-            request_token_required: true,
-            renewal_token_required: true,
-        }
-    }
+    .await
+    .map_or_else(
+        |err| {
+            info!("Failed to authenticate: {}", err);
+            AuthenticationResponder {
+                request_token: None,
+                renewal_token: None,
+                request_token_required: true,
+                renewal_token_required: true,
+            }
+        },
+        |member| {
+            debug!("Authenticated user: {}", member.username);
+            let (request_token, renewal_token) = (
+                generate_token(&member, true, config, private_key),
+                generate_token(&member, false, config, private_key),
+            );
+            debug!(
+                "Generated tokens {:?} and {:?}",
+                request_token, renewal_token
+            );
+            AuthenticationResponder {
+                request_token: request_token.ok(),
+                renewal_token: renewal_token.ok(),
+                request_token_required: true,
+                renewal_token_required: true,
+            }
+        },
+    )
 }

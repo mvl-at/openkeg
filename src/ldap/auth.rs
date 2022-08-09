@@ -15,12 +15,48 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+use std::fmt::Debug;
+use std::fmt::Display;
+use std::fmt::Formatter;
+
 use ldap3::LdapConnAsync;
 
 use crate::config::Config;
 use crate::members::model::Member;
 use crate::members::state::Repository;
 use crate::MemberStateMutex;
+
+/// Error which during the authentication.
+#[derive(Debug)]
+pub enum AuthenticationError<'u> {
+    /// No such user exists.
+    NonExistingUsername(&'u str),
+    /// Something went wrong during opening the ldap session.
+    Session,
+    /// Something went wrong during the bind method.
+    Bind(&'u str),
+    /// The credentials are invalid.
+    Credentials(&'u str),
+}
+
+impl Display for AuthenticationError<'_> {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
+        let arguments = match self {
+            AuthenticationError::NonExistingUsername(username) => {
+                format!("no such username exists: '{}'", username)
+            }
+            AuthenticationError::Session => "failed to open the ldap session".to_string(),
+            AuthenticationError::Bind(username) => format!(
+                "user with username '{}' failed to bind to the ldap server",
+                username
+            ),
+            AuthenticationError::Credentials(username) => {
+                format!("invalid credentials for user with username '{}'", username)
+            }
+        };
+        formatter.write_str(arguments.as_str())
+    }
+}
 
 /// Authenticate a member against the directory server using bind.
 ///
@@ -43,44 +79,34 @@ use crate::MemberStateMutex;
 ///     //authentication failed
 /// }
 /// ```
-pub async fn authenticate(
+pub async fn authenticate<'a>(
     config: &Config,
     member_state: &mut MemberStateMutex,
-    username: &String,
-    password: &String,
-) -> Result<Member, ()> {
+    username: &'a str,
+    password: &str,
+) -> Result<Member, AuthenticationError<'a>> {
     debug!("Try to authenticate {}", username);
     let member_state_lock = member_state.read().await;
-    let member_option = member_state_lock.all_members.find(username);
-    if member_option.is_none() {
-        info!(
-            "Someone tried to authenticate with non-existing username: {}",
-            username
-        );
-        return Err(());
-    }
-    let member = member_option.unwrap();
+    let member = member_state_lock
+        .all_members
+        .find(&username.to_string())
+        .ok_or(AuthenticationError::NonExistingUsername(username))?;
     let dn = &member.full_username;
     let ldap_config = &config.ldap;
     info!("Bind to auth server: {}", ldap_config.server);
-    let ldap_result = LdapConnAsync::new(&*ldap_config.server).await;
-    if ldap_result.is_err() {
-        error!(
-            "Failed to open auth session: {:#?}",
-            ldap_result.err().unwrap()
-        );
-        return Err(());
-    }
-    let (conn, mut ldap) = ldap_result.unwrap();
+    let (conn, mut ldap) = LdapConnAsync::new(&*ldap_config.server)
+        .await
+        .map_err(|e| {
+            error!("Failed to open the auth session: {:#?}", e);
+            AuthenticationError::Session
+        })?;
     ldap3::drive!(conn);
-    let result = ldap.simple_bind(dn, password).await;
-    if result.is_err() {
-        return Err(());
-    }
-    let res = result.unwrap();
-    if res.success().is_ok() {
-        info!("Authenticated {}", member.username);
-        return Ok(member.clone());
-    }
-    Err(())
+    let ldap_result = ldap.simple_bind(dn, password).await.map_err(|e| {
+        warn!("Failed to bind to the ldap server: {:#?}", e);
+        AuthenticationError::Bind(username)
+    })?;
+    ldap_result
+        .success()
+        .map_err(|_| AuthenticationError::Credentials(username))?;
+    Ok(member.clone())
 }
