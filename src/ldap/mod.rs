@@ -82,10 +82,7 @@ async fn open_session(config: &Config) -> Result<Ldap, LdapError> {
     info!("Bind to ldap server: {}", ldap_config.server);
     let (conn, mut ldap) = LdapConnAsync::new(&*ldap_config.server).await?;
     ldap3::drive!(conn);
-    if ldap_config.dn.is_none() {
-        warn!("Using ldap without user, this is not recommended");
-    } else {
-        let user = ldap_config.dn.as_ref().unwrap();
+    if let Some(user) = ldap_config.dn.as_ref() {
         info!("Bind ldap user with dn '{}'", user);
         let result = ldap
             .simple_bind(
@@ -94,6 +91,8 @@ async fn open_session(config: &Config) -> Result<Ldap, LdapError> {
             )
             .await?;
         result.non_error()?;
+    } else {
+        warn!("Using ldap without user, this is not recommended");
     }
     Ok(ldap)
 }
