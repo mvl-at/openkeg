@@ -338,17 +338,13 @@ fn sort_by_book_page(book: &str, scores: &mut Vec<Score>) {
             .iter()
             .find(|p| book.eq_ignore_ascii_case(p.book.as_str()));
         if page_opt_a.is_none() {
-            return if page_opt_b.is_none() {
-                Ordering::Equal
-            } else {
-                Ordering::Less
-            };
+            return page_opt_b.map_or_else(|| Ordering::Equal, |_| Ordering::Less);
         }
         if page_opt_b.is_none() {
             return Ordering::Greater;
         }
-        let page_a_begin = &page_opt_a.unwrap().begin;
-        let page_b_begin = &page_opt_b.unwrap().begin;
+        let page_a_begin = &page_opt_a.expect("page of score_a").begin;
+        let page_b_begin = &page_opt_b.expect("page of score_b").begin;
         let prefix_ordering = page_a_begin.prefix.cmp(&page_b_begin.prefix);
         if prefix_ordering != Ordering::Equal {
             return if page_a_begin.prefix.is_none() || page_b_begin.prefix.is_none() {
