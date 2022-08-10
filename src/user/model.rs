@@ -174,16 +174,13 @@ impl<'r> Responder<'r, 'static> for AuthenticationResponder {
         }
         let mut response_builder = rocket::response::Response::build();
         response_builder.header(ContentType::Text);
-        if self.request_token.is_some() {
-            response_builder.header(Header::new(
-                "Authorization",
-                format!("Bearer {}", self.request_token.unwrap()),
-            ));
+        if let Some(token) = self.request_token {
+            response_builder.header(Header::new("Authorization", format!("Bearer {}", token)));
         }
-        if self.renewal_token.is_some() {
+        if let Some(token) = self.renewal_token {
             response_builder.header(Header::new(
                 "Authorization-Renewal",
-                format!("Bearer {}", self.renewal_token.unwrap()),
+                format!("Bearer {}", token),
             ));
         }
         response_builder.ok()
