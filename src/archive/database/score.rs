@@ -150,17 +150,18 @@ pub async fn put_score<'de>(conf: &Config, client: &Client, mut score: Score) ->
             http_status_code: Status::BadRequest.code,
         });
     }
-    let mut couch_id = score.couch_id.clone();
-    if score.couch_id.is_some() {
-        check_document_partition(&couch_id.unwrap(), &conf.database.score_partition)?;
+    if let Some(couch_id) = &score.couch_id {
+        check_document_partition(couch_id, &conf.database.score_partition)?;
     } else {
         score.couch_id = Some(generate_document_id(&conf.database.score_partition));
     }
-    couch_id = score.couch_id.clone();
     let api_url = format!(
         "{}/{}",
         conf.database.database_mapping.put_score,
-        couch_id.unwrap()
+        score
+            .couch_id
+            .as_ref()
+            .expect("Checked or generated score id")
     );
     let parameters: HashMap<String, String> = HashMap::new();
     request(
