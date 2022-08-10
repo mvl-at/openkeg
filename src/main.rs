@@ -102,7 +102,9 @@ fn register_user_sync_task(server: &Rocket<Build>) {
         warn!("Unable to retrieve member state, scheduled user synchronization will not work");
         return;
     }
-    let mut member_state_clone = member_state_option.unwrap().clone();
+    let mut member_state_clone = member_state_option
+        .expect("Member state for synchronizing")
+        .clone();
     task::spawn(async move {
         member_synchronization_task(&config, &mut member_state_clone).await;
     });
