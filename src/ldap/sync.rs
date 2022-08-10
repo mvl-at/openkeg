@@ -17,6 +17,7 @@
 
 use std::time::Duration;
 
+use ldap3::LdapError;
 use rocket::tokio;
 
 use crate::config::{Config, LdapConfig};
@@ -35,8 +36,12 @@ use crate::MemberStateMutex;
 /// * `member_state` the mutex of the current member state which should be altered
 pub async fn synchronize_members_and_groups(conf: &Config, member_state: &mut MemberStateMutex) {
     let ldap_conf = &conf.ldap;
-    let optionals = fetch_results(conf, ldap_conf).await;
-    if optionals.is_none() {
+    let result = fetch_results(conf, ldap_conf).await;
+    if let Err(err) = result {
+        warn!(
+            "Unable to fetch partial data from the directory server, stop synchronizing: {:?}",
+            err
+        );
         return;
     }
     let (
@@ -45,7 +50,7 @@ pub async fn synchronize_members_and_groups(conf: &Config, member_state: &mut Me
         mut honorary_option,
         mut registers_vector,
         mut executives_vector,
-    ) = optionals.unwrap();
+    ) = result.expect("member vectors - checked above");
 
     info!("Done fetching, begin with transformation");
     let mut member_state_lock = member_state.write().await;
@@ -121,78 +126,52 @@ fn fill_primitive_collections(
 async fn fetch_results(
     conf: &Config,
     ldap_conf: &LdapConfig,
-) -> Option<(
-    Vec<Member>,
-    Vec<Member>,
-    Vec<Member>,
-    Vec<Group>,
-    Vec<Group>,
-)> {
-    let stop_str = "Unable to fetch partial data from the directory server, stop synchronizing";
-    let member_option = fetch_entries::<Member, Member>(
+) -> Result<
+    (
+        Vec<Member>,
+        Vec<Member>,
+        Vec<Member>,
+        Vec<Group>,
+        Vec<Group>,
+    ),
+    LdapError,
+> {
+    let members = fetch_entries::<Member, Member>(
         "members",
         &ldap_conf.member_base,
         &ldap_conf.member_filter,
         conf,
     )
-    .await;
-    if member_option.is_none() {
-        warn!("{}", stop_str);
-        return None;
-    }
-    let sutler_option = fetch_entries::<Member, Member>(
+    .await?;
+    let sutlers = fetch_entries::<Member, Member>(
         "sutlers",
         &ldap_conf.sutler_base,
         &ldap_conf.sutler_filter,
         conf,
     )
-    .await;
-    if sutler_option.is_none() {
-        warn!("{}", stop_str);
-        return None;
-    }
-    let honorary_option = fetch_entries::<Member, Member>(
+    .await?;
+    let honoraries = fetch_entries::<Member, Member>(
         "honorary members",
         &ldap_conf.honorary_base,
         &ldap_conf.honorary_filter,
         conf,
     )
-    .await;
-    if honorary_option.is_none() {
-        warn!("{}", stop_str);
-        return None;
-    }
-
-    let registers_option = fetch_entries::<Group, Group>(
+    .await?;
+    let registers = fetch_entries::<Group, Group>(
         "registers",
         &ldap_conf.register_base,
         &ldap_conf.register_filter,
         conf,
     )
-    .await;
-    if registers_option.is_none() {
-        warn!("{}", stop_str);
-        return None;
-    }
-
-    let executives_option = fetch_entries::<Group, Group>(
+    .await?;
+    let executives = fetch_entries::<Group, Group>(
         "executive roles",
         &ldap_conf.executives_base,
         &ldap_conf.executives_filter,
         conf,
     )
-    .await;
-    if executives_option.is_none() {
-        warn!("{}", stop_str);
-        return None;
-    }
-    Some((
-        member_option.unwrap(),
-        sutler_option.unwrap(),
-        honorary_option.unwrap(),
-        registers_option.unwrap(),
-        executives_option.unwrap(),
-    ))
+    .await?;
+    Ok((members, sutlers, honoraries, registers, executives))
 }
 
 /// Fetch all entries of the given type and print messages.
@@ -203,22 +182,22 @@ async fn fetch_results(
 /// * `base` : the base dn to search in
 /// * `filter` : the auth filter to use during search
 /// * `conf` : the application configuration
-async fn fetch_entries<R, E>(typ: &str, base: &str, filter: &str, conf: &Config) -> Option<Vec<R>>
+async fn fetch_entries<R, E>(
+    typ: &str,
+    base: &str,
+    filter: &str,
+    conf: &Config,
+) -> Result<Vec<R>, LdapError>
 where
     E: LdapDeserializable<R>,
 {
-    let ldap_result = search_entries::<R, E>(base, filter, conf).await;
-    if ldap_result.is_err() {
-        warn!("Unable to fetch {} from the directory server", typ);
-        return None;
-    }
-    let ldap_entries = ldap_result.unwrap();
+    let ldap_entries = search_entries::<R, E>(base, filter, conf).await?;
     info!(
         "Successfully received {} {} entries",
         ldap_entries.len(),
         typ
     );
-    Some(ldap_entries)
+    Ok(ldap_entries)
 }
 
 /// Runs the task to synchronize all members and groups and attaches it to the member state.
