@@ -60,17 +60,17 @@ pub async fn photo(
     member_state: &State<MemberStateMutex>,
 ) -> std::result::Result<Photo, Error> {
     let member_state_lock = member_state.read().await;
-    let member_option = member_state_lock.all_members.find(&username);
-    if member_option.is_none() {
-        debug!("unable to find member with username {}", username);
-        return Err(Error {
-            err: "Not Found".to_string(),
-            msg: Some("No member with such username".to_string()),
-            http_status_code: Status::NotFound.code,
-        });
-    }
-    let member = member_option.unwrap();
-    Ok(Photo(member.photo.to_vec()))
+    member_state_lock.all_members.find(&username).map_or_else(
+        || {
+            debug!("unable to find member with username {}", username);
+            Err(Error {
+                err: "Not Found".to_string(),
+                msg: Some("No member with such username".to_string()),
+                http_status_code: Status::NotFound.code,
+            })
+        },
+        |member| Ok(Photo(member.photo.to_vec())),
+    )
 }
 
 /// Synchronize all members.
