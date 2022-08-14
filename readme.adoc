@@ -71,6 +71,13 @@ Some rules cannot be expressed via the `.editorconfig` as they are often semanti
 
 * Prefer functional way over imperative
 
+== OpenAPI
+
+This application hosts its own OpenAPI specification in order to document the rest interface.
+However, this does not include any frontends such as link:https://swagger.io/[Swagger] or link:https://rapidocweb.com/[RapiDoc].
+This leads it up to the user whatever they want to use.
+The schema definition is located at `/api/v1/openapi.json`.
+
 == Name Origin
 
 As in many music societies, the consumption of kegs is common in the Musikverein Leopoldsdorf.

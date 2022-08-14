@@ -138,7 +138,7 @@ fn manage_keys(server: Rocket<Build>) -> Rocket<Build> {
 }
 
 fn openapi_settings() -> OpenApiSettings {
-    rocket_okapi::settings::OpenApiSettings::default()
+    Default::default()
 }
 
 fn custom_openapi_spec() -> OpenApi {
