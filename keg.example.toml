@@ -1,3 +1,7 @@
+[default]
+port = 1926
+ident = "openkeg/0.1.2"
+
 [default.ldap]
 server = "ldap://localhost:2389"
 dn = "uid=koal,ou=Musik,ou=Mitglieder,dc=mvl,dc=at"
