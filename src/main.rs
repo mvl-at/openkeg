@@ -27,8 +27,8 @@ use reqwest::Client;
 use rocket::fairing::AdHoc;
 use rocket::tokio::sync::RwLock;
 use rocket::{Build, Rocket};
+use rocket_okapi::mount_endpoints_and_merged_docs;
 use rocket_okapi::settings::OpenApiSettings;
-use rocket_okapi::{mount_endpoints_and_merged_docs, swagger_ui::*};
 
 use crate::config::Config;
 use crate::cors::Cors;
@@ -74,15 +74,7 @@ async fn main() {
 fn create_server(figment: Figment) -> Rocket<Build> {
     let custom_route_spec = (vec![], custom_openapi_spec());
     let openapi_settings = openapi_settings();
-    let mut rocket = rocket::custom(figment)
-        .mount(
-            "/swagger-ui/",
-            make_swagger_ui(&SwaggerUIConfig {
-                url: "/api/v1/openapi.json".to_owned(),
-                ..Default::default()
-            }),
-        )
-        .attach(AdHoc::config::<Config>());
+    let mut rocket = rocket::custom(figment).attach(AdHoc::config::<Config>());
     mount_endpoints_and_merged_docs! {
         rocket, "/api/v1".to_owned(), openapi_settings,
         "/" => custom_route_spec,
