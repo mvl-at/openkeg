@@ -24,11 +24,11 @@ use std::sync::Arc;
 use ldap3::tokio::task;
 use okapi::merge::merge_specs;
 use reqwest::Client;
-use rocket::{Build, Rocket};
 use rocket::config::Ident;
 use rocket::fairing::AdHoc;
 use rocket::fs::{FileServer, Options};
 use rocket::tokio::sync::RwLock;
+use rocket::{Build, Rocket};
 use rocket_okapi::mount_endpoints_and_merged_docs;
 
 use crate::config::Config;
@@ -107,7 +107,7 @@ async fn configure_rocket(rocket: Rocket<Build>) -> Rocket<Build> {
     let configured_rocket = manage_database_client(manage_member_state(manage_keys(attach_cors(
         manage_server_info(mount_static_directory(mount_controller_routes(rocket))),
     ))))
-        .await;
+    .await;
     register_user_sync_task(&configured_rocket);
     configured_rocket
 }
@@ -120,6 +120,7 @@ async fn configure_rocket(rocket: Rocket<Build>) -> Rocket<Build> {
 ///
 /// returns: Rocket<Build>
 fn mount_controller_routes(mut rocket: Rocket<Build>) -> Rocket<Build> {
+    info!("Mount controllers and routes to the web server");
     let openapi_settings = openapi_settings();
     let (info_route, info_spec) = get_info_routes_and_docs(&openapi_settings);
     let mut openapi_spec_header = custom_openapi_spec(&rocket);
@@ -134,8 +135,7 @@ fn mount_controller_routes(mut rocket: Rocket<Build>) -> Rocket<Build> {
         "/statistics" => archive::get_statistics_routes_and_docs(&openapi_settings),
         "/members" => members::get_routes_and_docs(&openapi_settings),
         "/user" => user::get_routes_and_docs(&openapi_settings),
-    }
-    ;
+    };
     rocket.mount("/", get_info_routes_and_docs(&openapi_settings).0.to_vec())
 }
 
@@ -177,6 +177,7 @@ fn mount_static_directory(rocket: Rocket<Build>) -> Rocket<Build> {
 ///
 /// returns: Rocket<Build>
 fn manage_server_info(rocket: Rocket<Build>) -> Rocket<Build> {
+    info!("Create the server info and manage it");
     rocket.manage(ServerInfo::new())
 }
 
@@ -188,6 +189,7 @@ fn manage_server_info(rocket: Rocket<Build>) -> Rocket<Build> {
 ///
 /// returns: Rocket<Build>
 fn attach_cors(rocket: Rocket<Build>) -> Rocket<Build> {
+    info!("Create the CORS header and attach it");
     rocket.attach(Cors)
 }
 
@@ -235,6 +237,7 @@ fn manage_keys(rocket: Rocket<Build>) -> Rocket<Build> {
 ///
 /// returns: Rocket<Build>
 fn manage_member_state(rocket: Rocket<Build>) -> Rocket<Build> {
+    info!("Create the member state and let the server manage it");
     let member_state = MemberState::mutex();
     rocket.manage(member_state)
 }
@@ -247,6 +250,7 @@ fn manage_member_state(rocket: Rocket<Build>) -> Rocket<Build> {
 ///
 /// returns: Rocket<Build>
 async fn manage_database_client(rocket: Rocket<Build>) -> Rocket<Build> {
+    info!("Create the database client and let the server manage it");
     let config = &rocket_configuration(&rocket);
     rocket.manage(initialize_client(config).await)
 }
@@ -261,6 +265,7 @@ async fn manage_database_client(rocket: Rocket<Build>) -> Rocket<Build> {
 ///
 /// returns: ()
 fn register_user_sync_task(rocket: &Rocket<Build>) {
+    info!("Create the member synchronization task and run it");
     let config = rocket_configuration(rocket);
     let member_state_option = rocket.state::<MemberStateMutex>();
     if member_state_option.is_none() {
