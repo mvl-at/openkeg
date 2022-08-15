@@ -18,11 +18,13 @@
 #[macro_use]
 extern crate rocket;
 
+use std::borrow::Borrow;
 use std::env;
 use std::sync::Arc;
 
 use figment::Figment;
 use ldap3::tokio::task;
+use okapi::merge::merge_specs;
 use okapi::openapi3::OpenApi;
 use reqwest::Client;
 use rocket::config::Ident;
@@ -36,6 +38,7 @@ use rocket_okapi::settings::OpenApiSettings;
 use crate::config::Config;
 use crate::cors::Cors;
 use crate::database::initialize_client;
+use crate::info::{get_info_routes_and_docs, ServerInfo};
 use crate::ldap::auth;
 use crate::ldap::sync::member_synchronization_task;
 use crate::members::state::MemberState;
@@ -46,6 +49,7 @@ mod archive;
 mod config;
 mod cors;
 mod database;
+mod info;
 mod ldap;
 mod members;
 mod schema_util;
@@ -70,6 +74,7 @@ async fn main() {
     server_result = manage_keys(server_result).attach(Cors);
     let config = server_result.figment().extract::<Config>().expect("config");
     server_result = server_result.manage(initialize_client(&config).await);
+    server_result = server_result.manage(ServerInfo::new());
     server_result = configure_static_directory(server_result);
     register_user_sync_task(&server_result);
     match server_result.launch().await {
@@ -94,12 +99,16 @@ pub fn keg_user_agent() -> String {
 }
 
 fn create_server(figment: Figment) -> Rocket<Build> {
-    let custom_route_spec = (vec![], custom_openapi_spec());
     let openapi_settings = openapi_settings();
+    let (info_route, info_spec) = get_info_routes_and_docs(&openapi_settings);
+    let mut openapi_spec_header = custom_openapi_spec();
+    merge_specs(&mut openapi_spec_header, &"".to_string(), &info_spec)
+        .expect("OpenApi spec and routes");
+    let custom_spec = (info_route, openapi_spec_header);
     let mut rocket = rocket::custom(figment).attach(AdHoc::config::<Config>());
     mount_endpoints_and_merged_docs! {
         rocket, "/api/v1".to_owned(), openapi_settings,
-        "/" => custom_route_spec,
+        "" => custom_spec,
         "/scores" => archive::get_scores_routes_and_docs(&openapi_settings),
         "/books" => archive::get_books_routes_and_docs(&openapi_settings),
         "/statistics" => archive::get_statistics_routes_and_docs(&openapi_settings),
