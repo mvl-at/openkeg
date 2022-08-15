@@ -19,9 +19,8 @@ use reqwest::Client;
 use rocket::State;
 use rocket_okapi::openapi;
 
-use crate::archive::database;
-use crate::archive::database::FindResponse;
 use crate::archive::model::Score;
+use crate::database::FindResponse;
 use crate::openapi::ApiResult;
 use crate::Config;
 
@@ -46,5 +45,5 @@ pub async fn get_book_content(
     client: &State<Client>,
     name: String,
 ) -> ApiResult<FindResponse<Score>> {
-    database::score::get_book_content(conf, client, name).await
+    crate::database::score::get_book_content(conf, client, name).await
 }

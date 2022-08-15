@@ -15,12 +15,12 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+use crate::{keg_user_agent, Config};
+use reqwest::{Client, ClientBuilder, Url};
+use serde::Serialize;
 use std::error::Error;
 
-use reqwest::{Client, ClientBuilder, Url};
-use rocket::serde::Serialize;
-
-use crate::{keg_user_agent, Config, DatabaseClient};
+pub type DatabaseClient = Client;
 
 /// Initialize the database client and configures it.
 /// If the initialization fails this function will panic.

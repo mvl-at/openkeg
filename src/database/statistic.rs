@@ -20,9 +20,9 @@ use std::collections::HashMap;
 use reqwest::{Client, Method};
 use rocket::serde::json::Json;
 
-use crate::archive::database::request;
 use crate::archive::model::CountStatistic;
 use crate::archive::statistic::CountStatisticType;
+use crate::database::request;
 use crate::openapi::ApiResult;
 use crate::Config;
 

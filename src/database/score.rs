@@ -24,11 +24,11 @@ use rocket::serde::json::Json;
 use schemars::JsonSchema;
 use serde_json::{json, Value};
 
-use crate::archive::database::{
+use crate::archive::model::{Score, ScoreSearchTermField};
+use crate::database::{
     check_document_partition, fuzzy, generate_document_id, request, FindResponse,
     OperationResponse, Pagination,
 };
-use crate::archive::model::{Score, ScoreSearchTermField};
 use crate::openapi::{ApiError, ApiResult};
 use crate::Config;
 

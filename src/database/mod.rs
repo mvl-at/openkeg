@@ -22,10 +22,11 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::database::authenticate;
+use crate::database::client::authenticate;
 use crate::openapi::{ApiError, SchemaExample};
 use crate::Config;
 
+pub mod client;
 mod fuzzy;
 pub mod score;
 pub mod statistic;

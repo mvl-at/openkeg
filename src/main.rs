@@ -23,7 +23,6 @@ use std::sync::Arc;
 
 use ldap3::tokio::task;
 use okapi::merge::merge_specs;
-use reqwest::Client;
 use rocket::config::Ident;
 use rocket::fairing::AdHoc;
 use rocket::fs::{FileServer, Options};
@@ -33,7 +32,7 @@ use rocket_okapi::mount_endpoints_and_merged_docs;
 
 use crate::config::Config;
 use crate::cors::Cors;
-use crate::database::initialize_client;
+use crate::database::client::initialize_client;
 use crate::info::{get_info_routes_and_docs, ServerInfo};
 use crate::ldap::auth;
 use crate::ldap::sync::member_synchronization_task;
@@ -52,7 +51,6 @@ mod openapi;
 mod user;
 
 pub type MemberStateMutex = Arc<RwLock<MemberState>>;
-pub type DatabaseClient = Client;
 
 /// Entrypoint for the rocket application.
 #[rocket::main]

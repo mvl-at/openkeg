@@ -20,10 +20,9 @@ use rocket::serde::json::Json;
 use rocket::State;
 use rocket_okapi::openapi;
 
-use crate::archive::database;
-use crate::archive::database::score::{all_scores, ScoreSearchParameters};
-use crate::archive::database::{FindResponse, OperationResponse, Pagination};
 use crate::archive::model::Score;
+use crate::database::score::{all_scores, ScoreSearchParameters};
+use crate::database::{FindResponse, OperationResponse, Pagination};
 use crate::openapi::ApiResult;
 use crate::Config;
 
@@ -65,7 +64,7 @@ pub async fn search_scores(
     conf: &State<Config>,
     client: &State<Client>,
 ) -> ApiResult<FindResponse<Score>> {
-    database::score::search_scores(conf, client, parameters).await
+    crate::database::score::search_scores(conf, client, parameters).await
 }
 
 /// Find a single score by its id.
@@ -84,7 +83,7 @@ pub async fn get_score(
     conf: &State<Config>,
     client: &State<Client>,
 ) -> ApiResult<Score> {
-    database::score::get_score(conf, client, id).await
+    crate::database::score::get_score(conf, client, id).await
 }
 
 /// Insert a score into the database.
@@ -103,7 +102,7 @@ pub async fn put_score(
     conf: &State<Config>,
     client: &State<Client>,
 ) -> ApiResult<Score> {
-    database::score::put_score(conf, client, score.0).await
+    crate::database::score::put_score(conf, client, score.0).await
 }
 
 /// Delete a score by its id and revision.
@@ -124,5 +123,5 @@ pub async fn delete_score(
     conf: &State<Config>,
     client: &State<Client>,
 ) -> ApiResult<OperationResponse> {
-    database::score::delete_score(conf, client, id, rev).await
+    crate::database::score::delete_score(conf, client, id, rev).await
 }

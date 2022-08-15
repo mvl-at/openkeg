@@ -20,8 +20,8 @@ use rocket::serde::{Deserialize, Serialize};
 use rocket::State;
 use rocket_okapi::{openapi, JsonSchema};
 
-use crate::archive::database::statistic::count_statistic;
 use crate::archive::model::CountStatistic;
+use crate::database::statistic::count_statistic;
 use crate::openapi::ApiResult as JsonResult;
 use crate::Config;
 
