@@ -18,7 +18,6 @@
 #[macro_use]
 extern crate rocket;
 
-use std::borrow::Borrow;
 use std::env;
 use std::sync::Arc;
 
@@ -101,11 +100,11 @@ pub fn keg_user_agent() -> String {
 fn create_server(figment: Figment) -> Rocket<Build> {
     let openapi_settings = openapi_settings();
     let (info_route, info_spec) = get_info_routes_and_docs(&openapi_settings);
-    let mut openapi_spec_header = custom_openapi_spec();
+    let mut rocket = rocket::custom(figment).attach(AdHoc::config::<Config>());
+    let mut openapi_spec_header = custom_openapi_spec(&rocket);
     merge_specs(&mut openapi_spec_header, &"".to_string(), &info_spec)
         .expect("OpenApi spec and routes");
     let custom_spec = (info_route, openapi_spec_header);
-    let mut rocket = rocket::custom(figment).attach(AdHoc::config::<Config>());
     mount_endpoints_and_merged_docs! {
         rocket, "/api/v1".to_owned(), openapi_settings,
         "" => custom_spec,
@@ -202,7 +201,9 @@ fn openapi_settings() -> OpenApiSettings {
     Default::default()
 }
 
-fn custom_openapi_spec() -> OpenApi {
+fn custom_openapi_spec(rocket: &Rocket<Build>) -> OpenApi {
+    let rocket_config: rocket::Config = rocket.figment().extract().expect("config");
+    let config: Config = rocket.figment().extract().expect("config");
     use okapi::openapi3::*;
     OpenApi {
         openapi: OpenApi::default_version(),
@@ -228,13 +229,18 @@ fn custom_openapi_spec() -> OpenApi {
         },
         servers: vec![
             Server {
-                url: "http://localhost:8000/api/v1/".to_owned(),
+                url: config.openapi_url,
+                description: Some("Self Hosted Instance".to_owned()),
+                ..Default::default()
+            },
+            Server {
+                url: format!("http://localhost:{}/api/v1/", rocket_config.port),
                 description: Some("Localhost".to_owned()),
                 ..Default::default()
             },
             Server {
                 url: "https://keg.mvl.at/api/v1/".to_owned(),
-                description: Some("Production Server".to_owned()),
+                description: Some("Sample Production Server".to_owned()),
                 ..Default::default()
             },
         ],
