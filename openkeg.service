@@ -1,0 +1,11 @@
+[Unit]
+Description=The Lightweight Backend of the Musikverein Leopoldsdorf
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/openkeg
+Type=simple
+Environment=KEG_CONFIG=/etc/openkeg/keg.toml RUST_LOG=info
+
+[Install]
+WantedBy=multi-user.target
