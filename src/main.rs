@@ -27,6 +27,7 @@ use okapi::openapi3::OpenApi;
 use reqwest::Client;
 use rocket::config::Ident;
 use rocket::fairing::AdHoc;
+use rocket::fs::{FileServer, Options};
 use rocket::tokio::sync::RwLock;
 use rocket::{Build, Rocket};
 use rocket_okapi::mount_endpoints_and_merged_docs;
@@ -69,6 +70,7 @@ async fn main() {
     server_result = manage_keys(server_result).attach(Cors);
     let config = server_result.figment().extract::<Config>().expect("config");
     server_result = server_result.manage(initialize_client(&config).await);
+    server_result = configure_static_directory(server_result);
     register_user_sync_task(&server_result);
     match server_result.launch().await {
         Ok(_) => info!("Shutdown OpenKeg!"),
@@ -155,6 +157,36 @@ fn manage_keys(server: Rocket<Build>) -> Rocket<Build> {
         ),
     }
     server_manage
+}
+
+/// Serve a static directory from the file system.
+/// This is intended to be used for OpenAPI frontends such as [Swagger](https://swagger.io/) or [RapiDoc](https://rapidocweb.com/).
+/// The directory will be served iff [Config::serve_static_directory] is set.
+/// If the directory does not exist on the filesystem while the configuration says it should be served, this function will panic.
+/// When requesting the base of the [Config::static_directory_url], the `index.html` will be returned.
+///
+/// # Arguments
+///
+/// * `rocket`: the state of the application to configure
+///
+/// returns: Rocket<Build> the (configured) application state
+fn configure_static_directory(rocket: Rocket<Build>) -> Rocket<Build> {
+    let config: Config = rocket.figment().extract().expect("config");
+    if config.serve_static_directory {
+        info!(
+            "Mount static directory '{}' to '{}'",
+            config.static_directory_path, config.static_directory_url
+        );
+        rocket.mount(
+            config.static_directory_url,
+            FileServer::new(
+                config.static_directory_path,
+                Options::Index | Options::NormalizeDirs,
+            ),
+        )
+    } else {
+        rocket
+    }
 }
 
 fn openapi_settings() -> OpenApiSettings {
