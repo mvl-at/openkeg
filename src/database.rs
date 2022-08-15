@@ -20,9 +20,7 @@ use std::error::Error;
 use reqwest::{Client, ClientBuilder, Url};
 use rocket::serde::Serialize;
 
-use crate::{Config, DatabaseClient};
-
-static KEG_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
+use crate::{keg_user_agent, Config, DatabaseClient};
 
 /// Initialize the database client and configures it.
 /// If the initialization fails this function will panic.
@@ -36,7 +34,7 @@ static KEG_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_P
 /// returns: the configured [`DatabaseClient`]
 pub async fn initialize_client(conf: &Config) -> DatabaseClient {
     let client = ClientBuilder::new()
-        .user_agent(KEG_USER_AGENT)
+        .user_agent(keg_user_agent().as_str())
         .cookie_store(true)
         .build()
         .map_err(|e| {

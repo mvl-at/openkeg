@@ -1,6 +1,5 @@
 [default]
 port = 1926
-ident = "openkeg/0.1.3"
 
 [default.ldap]
 server = "ldap://localhost:2389"

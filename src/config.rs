@@ -19,6 +19,7 @@ use figment::{
     providers::{Env, Format, Serialized, Toml},
     Figment, Profile,
 };
+use rocket::config::Ident;
 use rocket::serde::{Deserialize, Serialize};
 
 #[derive(Default, Debug, Serialize, Deserialize, Clone)]
@@ -27,6 +28,7 @@ pub struct Config {
     pub jwt: JwtConfig,
     pub cert: CertConfig,
     pub database: DatabaseConfig,
+    pub ident: Ident,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
