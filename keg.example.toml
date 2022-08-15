@@ -1,5 +1,6 @@
 [default]
 port = 1926
+openapi_url = "https://example.org/api/v1/"
 serve_static_directory = false
 static_directory_path = "/usr/share/openkeg/swagger"
 static_directory_url = "/swagger"
