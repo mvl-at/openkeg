@@ -49,6 +49,8 @@ As an alternative you might want to only omit these sensitive attributes and pro
 The difference is that in this application, the prefix is `KEG_` instead of `ROCKET_`.
 This is especially useful for container environments as in kubernetes or docker.
 
+NOTE: Due to unknown reasons it is currently not possible to override the default config file location.
+
 .The example configuration
 [source,toml]
 ----
