@@ -19,40 +19,68 @@ use figment::{
     providers::{Env, Format, Serialized, Toml},
     Figment, Profile,
 };
-use rocket::config::Ident;
 use rocket::serde::{Deserialize, Serialize};
 
+/// The application configuration.
 #[derive(Default, Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
+    /// The configuration of the directory server.
     pub ldap: LdapConfig,
+    /// The configuration of the jwts.
     pub jwt: JwtConfig,
+    /// The configuration of the certificates.
     pub cert: CertConfig,
+    /// The configuration of the database.
     pub database: DatabaseConfig,
-    pub ident: Ident,
+    /// The url to use for a server entry in the OpenApi schema.
+    /// It is highly recommended to use a URL to this server instance.
     pub openapi_url: String,
+    /// Whether expose a directory to the public or not.
+    /// May be used to serve the swagger ui or the RapiDoc.
     pub serve_static_directory: bool,
+    /// The filesystem path to the public directory.
     pub static_directory_path: String,
+    /// The URL where to mount the public directory.
     pub static_directory_url: String,
 }
 
+/// The configuration of the directory server.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LdapConfig {
+    /// The server url.
     pub server: String,
+    /// The dn to use to bind to the server.
+    /// If 'None' a bind without a user will be tried.
     pub dn: Option<String>,
+    /// The password for the dn.
     pub password: Option<String>,
+    /// The synchronization interval for the member and groups in *seconds*.
     pub synchronization_interval: u64,
+    /// The base dn where to start to search for members.
     pub member_base: String,
+    /// The filter to use to search members.
     pub member_filter: String,
+    /// The base dn where to start to search for sutlers.
     pub sutler_base: String,
+    /// The filter to use to search sutlers.
     pub sutler_filter: String,
+    /// The base dn where to start to search for honoraries.
     pub honorary_base: String,
+    /// The filter to use to search honoraries.
     pub honorary_filter: String,
+    /// The base dn where to start to search for registers.
     pub register_base: String,
+    /// The filter to use to search registers.
     pub register_filter: String,
+    /// The base dn where to start to search for executives.
     pub executives_base: String,
+    /// The filter to use to search executives.
     pub executives_filter: String,
+    /// The mapping for the member attributes.
     pub member_mapping: MemberMapping,
+    /// The mapping for the address attributes.
     pub address_mapping: AddressMapping,
+    /// The mapping for the group attributes.
     pub group_mapping: GroupMapping,
 }
 
@@ -80,23 +108,54 @@ impl Default for LdapConfig {
     }
 }
 
+/// The mapping to members.
+/// This refers to an LDAP structure which likely has the 'mvlMember' object class.
+/// The attribute descriptions refer to the content of the object attribute and provide an example often seen for the mapping.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MemberMapping {
+    /// The short username mapping, something like 'cn' or 'uid'.
     pub username: String,
+    /// The full username mapping, normally 'dn'.
     pub full_username: String,
+    /// The first name mapping such as 'givenName'.
     pub first_name: String,
+    /// The last name mapping such as 'sn'.
     pub last_name: String,
+    /// The common name, this is normally how someone wants to be called.
+    /// Normally 'cn'.
     pub common_name: String,
+    /// Whether this member uses the WhatsApp services or not.
+    /// Something like 'wa'.
     pub whatsapp: String,
+    /// The year when this member joined the society.
+    /// Something like 'joining'.
     pub joining: String,
+    /// Whether this member is listed publicly or not.
+    /// Something like 'listed'.
     pub listed: String,
+    /// Whether this member is registered at the ÖBV or not.
+    /// Something like 'official'.
     pub official: String,
+    /// The gender of this member.
+    /// Something like 'gender'.
     pub gender: String,
+    /// Whether this member is active or not.
+    /// Something like 'active'.
     pub active: String,
+    /// The mobile number of this member.
+    /// Normally 'mobile'
     pub mobile: String,
+    /// The date of birth of this member.
+    /// Something like 'birthday'.
     pub birthday: String,
+    /// The email address of this member.
+    /// Normally 'mail'.
     pub mail: String,
+    /// The titles of this member such as 'Kapellmeister'.
+    /// Normally 'title'.
     pub titles: String,
+    /// The photo of this member.
+    /// Normally 'jpegPhoto'
     pub photo: String,
 }
 
@@ -123,13 +182,28 @@ impl Default for MemberMapping {
     }
 }
 
+/// The mapping to addresses.
+/// This refers to an LDAP structure which supports addresses.
+/// The attribute descriptions refer to the content of the object attribute and provide an example often seen for the mapping.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AddressMapping {
+    /// The street of the address such as 'Lasseer Strasse'.
+    /// Normally 'street'.
     pub street: String,
+    /// The number of the address such as '3' or '3a'.
+    /// Normally 'houseIdentifier'.
     pub house_number: String,
+    /// The postal code of this address such as '2285'.
+    /// Normally 'postalCode'.
     pub postal_code: String,
+    /// The city of this address such as 'Leopoldsdorf i.M.'.
+    /// Normally 'l'.
     pub city: String,
+    /// The state of this address such 'Burgenland'.
+    /// Normally 'st'.
     pub state: String,
+    /// The country code of this address such as 'AT'.
+    /// Normally 'st'.
     pub country_code: String,
 }
 
@@ -146,11 +220,24 @@ impl Default for AddressMapping {
     }
 }
 
+/// The mapping to groups.
+/// These mappings are valid for LDAP structures which likely require 'mvlGroup' as object class.
+/// The attribute descriptions refer to the content of the object attribute and provide an example often seen for the mapping.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GroupMapping {
+    /// The singular name of this group.
+    /// This may be a register name such as 'Flügelhorn' or another member group such as 'Sutler' or 'Honorary'.
+    /// Normally 'cn'.
     pub name: String,
+    /// The plural name of this group.
+    /// This may be a register name such as 'Flügelhörner' or another member group such as 'Sutlers' or 'Honoraries'.
+    /// Something like 'cns'.
     pub name_plural: String,
+    /// The description of this group.
+    /// Normally 'description'.
     pub description: String,
+    /// The member dns of this group.
+    /// Normally 'member'.
     pub members: String,
 }
 
@@ -165,6 +252,7 @@ impl Default for GroupMapping {
     }
 }
 
+/// The configuration section about jwts.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct JwtConfig {
     /// The expiration of request tokens given in *minutes*.
@@ -185,6 +273,8 @@ impl Default for JwtConfig {
     }
 }
 
+/// The configuration for the certificates.
+/// These are mostly used for signing and checking jwts.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CertConfig {
     /// The path to the private key in the der format
@@ -202,6 +292,7 @@ impl Default for CertConfig {
     }
 }
 
+/// The configuration of the database connection.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DatabaseConfig {
     /// The base url to the CouchDB Rest interface
@@ -228,6 +319,8 @@ impl Default for DatabaseConfig {
     }
 }
 
+/// A holder for the database mappings.
+/// These are a bunch of strings which define the urls where to retrieve and store data.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DatabaseMapping {
     /// The endpoint used for authentication
