@@ -29,6 +29,9 @@ pub struct Config {
     pub cert: CertConfig,
     pub database: DatabaseConfig,
     pub ident: Ident,
+    pub serve_static_directory: bool,
+    pub static_directory_path: String,
+    pub static_directory_url: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

@@ -78,6 +78,11 @@ However, this does not include any frontends such as link:https://swagger.io/[Sw
 This leads it up to the user whatever they want to use.
 The schema definition is located at `/api/v1/openapi.json`.
 
+The application provides the possibility to serve a self-contained frontend for OpenAPI.
+In order to use it, one has to set `serve_static_directory = true` in the configuration and set the appropriate `static_directory_path` and `static_directory_url`.
+
+WARNING: It is your responsibility to provide the files for the frontend and configure it properly. For this reason, it is disabled by default.
+
 == Name Origin
 
 As in many music societies, the consumption of kegs is common in the Musikverein Leopoldsdorf.
