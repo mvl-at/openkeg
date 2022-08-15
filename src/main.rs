@@ -115,7 +115,7 @@ fn create_server(figment: Figment) -> Rocket<Build> {
         "/members" => members::get_routes_and_docs(&openapi_settings),
         "/user" => user::get_routes_and_docs(&openapi_settings),
     };
-    rocket
+    rocket.mount("/", get_info_routes_and_docs(&openapi_settings).0.to_vec())
 }
 
 fn register_user_sync_task(server: &Rocket<Build>) {
