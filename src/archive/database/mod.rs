@@ -22,9 +22,8 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::api_result::Error;
 use crate::database::authenticate;
-use crate::schema_util::SchemaExample;
+use crate::openapi::{ApiError, SchemaExample};
 use crate::Config;
 
 mod fuzzy;
@@ -156,8 +155,8 @@ struct CouchError {
 }
 
 impl CouchError {
-    fn into_error(self, status: StatusCode) -> Error {
-        Error {
+    fn into_error(self, status: StatusCode) -> ApiError {
+        ApiError {
             err: self.error,
             msg: Some(self.reason),
             http_status_code: status.as_u16(),
@@ -187,8 +186,8 @@ impl SchemaExample for OperationResponse {
     }
 }
 
-fn request_error() -> Error {
-    Error {
+fn request_error() -> ApiError {
+    ApiError {
         err: "Request Error".to_string(),
         msg: Some("The backend is unable to perform the request against the database".to_string()),
         http_status_code: Status::InternalServerError.code,
@@ -215,7 +214,7 @@ async fn request<'a, R, P>(
     method: Method,
     api_url: &str,
     parameters: &P,
-) -> Result<R, Error>
+) -> Result<R, ApiError>
 where
     P: Serialize + ?Sized,
     R: DeserializeOwned,
@@ -250,7 +249,7 @@ where
         info!("The session cookie seems to be expired, try to reauthenticate");
         authenticate(conf, client).await.map_err(|e| {
             warn!("Unable to re-authenticate to the database: {}", e);
-            Error {
+            ApiError {
                 err: "Database Error".to_string(),
                 msg: Some(
                     "Cannot connect to the database, please contact the administrator".to_string(),
@@ -258,7 +257,7 @@ where
                 http_status_code: Status::InternalServerError.code,
             }
         })?;
-        let request_clone = request_clone_optional.ok_or(Error {
+        let request_clone = request_clone_optional.ok_or(ApiError {
             err: "Database Error".to_string(),
             msg: Some("Unable to reproduce the request, you may try again immediately".to_string()),
             http_status_code: Status::ServiceUnavailable.code,
@@ -294,11 +293,11 @@ where
 /// * `partition`: the partition which could contain the `id`
 ///
 /// returns: Result<(), Error>
-fn check_document_partition(id: &str, partition: &str) -> Result<(), Error> {
+fn check_document_partition(id: &str, partition: &str) -> Result<(), ApiError> {
     if id.starts_with(format!("{}:", partition).as_str()) {
         Ok(())
     } else {
-        Err(Error {
+        Err(ApiError {
             err: "invalid id".to_string(),
             msg: Some("the provided id starts with an invalid partition".to_string()),
             http_status_code: Status::UnprocessableEntity.code,

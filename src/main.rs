@@ -23,15 +23,13 @@ use std::sync::Arc;
 
 use ldap3::tokio::task;
 use okapi::merge::merge_specs;
-use okapi::openapi3::OpenApi;
 use reqwest::Client;
+use rocket::{Build, Rocket};
 use rocket::config::Ident;
 use rocket::fairing::AdHoc;
 use rocket::fs::{FileServer, Options};
 use rocket::tokio::sync::RwLock;
-use rocket::{Build, Rocket};
 use rocket_okapi::mount_endpoints_and_merged_docs;
-use rocket_okapi::settings::OpenApiSettings;
 
 use crate::config::Config;
 use crate::cors::Cors;
@@ -40,9 +38,9 @@ use crate::info::{get_info_routes_and_docs, ServerInfo};
 use crate::ldap::auth;
 use crate::ldap::sync::member_synchronization_task;
 use crate::members::state::MemberState;
+use crate::openapi::{custom_openapi_spec, openapi_settings};
 use crate::user::key::{read_private_key, read_public_key};
 
-mod api_result;
 mod archive;
 mod config;
 mod cors;
@@ -50,7 +48,7 @@ mod database;
 mod info;
 mod ldap;
 mod members;
-mod schema_util;
+mod openapi;
 mod user;
 
 pub type MemberStateMutex = Arc<RwLock<MemberState>>;
@@ -109,7 +107,7 @@ async fn configure_rocket(rocket: Rocket<Build>) -> Rocket<Build> {
     let configured_rocket = manage_database_client(manage_member_state(manage_keys(attach_cors(
         manage_server_info(mount_static_directory(mount_controller_routes(rocket))),
     ))))
-    .await;
+        .await;
     register_user_sync_task(&configured_rocket);
     configured_rocket
 }
@@ -136,7 +134,8 @@ fn mount_controller_routes(mut rocket: Rocket<Build>) -> Rocket<Build> {
         "/statistics" => archive::get_statistics_routes_and_docs(&openapi_settings),
         "/members" => members::get_routes_and_docs(&openapi_settings),
         "/user" => user::get_routes_and_docs(&openapi_settings),
-    };
+    }
+    ;
     rocket.mount("/", get_info_routes_and_docs(&openapi_settings).0.to_vec())
 }
 
@@ -286,66 +285,4 @@ fn register_user_sync_task(rocket: &Rocket<Build>) {
 /// returns: Config
 fn rocket_configuration(rocket: &Rocket<Build>) -> Config {
     rocket.figment().extract().expect("config")
-}
-
-/// Provide the OpenApi settings to be used in this application.
-///
-/// returns: OpenApiSettings
-fn openapi_settings() -> OpenApiSettings {
-    Default::default()
-}
-
-/// Create an [OpenApi] structure to use in this application.
-/// This structure will contain the header such as the license, author and server list.
-///
-/// # Arguments
-///
-/// * `rocket`: the build state to retrieve the configuration from
-///
-/// returns: OpenApi
-fn custom_openapi_spec(rocket: &Rocket<Build>) -> OpenApi {
-    let rocket_config: rocket::Config = rocket.figment().extract().expect("config");
-    let config = rocket_configuration(rocket);
-    use okapi::openapi3::*;
-    OpenApi {
-        openapi: OpenApi::default_version(),
-        info: Info {
-            title: "OpenKeg".to_owned(),
-            description: Some("The backend API for the Musikverein Leopoldsdorf!".to_owned()),
-            terms_of_service: Some(
-                "https://github.com/mvl-at/keg/blob/master/license.adoc".to_owned(),
-            ),
-            contact: Some(Contact {
-                name: Some("Richard Stöckl".to_owned()),
-                url: Some("https://github.com/mvl-at/openkeg".to_owned()),
-                email: Some("richard.stoeckl@aon.at".to_owned()),
-                ..Default::default()
-            }),
-            license: Some(License {
-                name: "GNU Free Documentation License 1.3".to_owned(),
-                url: Some("https://www.gnu.org/licenses/fdl-1.3-standalone.html".to_owned()),
-                ..Default::default()
-            }),
-            version: env!("CARGO_PKG_VERSION").to_owned(),
-            ..Default::default()
-        },
-        servers: vec![
-            Server {
-                url: config.openapi_url,
-                description: Some("Self Hosted Instance".to_owned()),
-                ..Default::default()
-            },
-            Server {
-                url: format!("http://localhost:{}/api/v1/", rocket_config.port),
-                description: Some("Localhost".to_owned()),
-                ..Default::default()
-            },
-            Server {
-                url: "https://keg.mvl.at/api/v1/".to_owned(),
-                description: Some("Sample Production Server".to_owned()),
-                ..Default::default()
-            },
-        ],
-        ..Default::default()
-    }
 }

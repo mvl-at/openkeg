@@ -20,11 +20,11 @@ use rocket::serde::json::Json;
 use rocket::State;
 use rocket_okapi::openapi;
 
-use crate::api_result::Result;
 use crate::archive::database;
 use crate::archive::database::score::{all_scores, ScoreSearchParameters};
 use crate::archive::database::{FindResponse, OperationResponse, Pagination};
 use crate::archive::model::Score;
+use crate::openapi::ApiResult;
 use crate::Config;
 
 /// Get all scores from the database with pagination.
@@ -36,7 +36,7 @@ pub async fn get_scores(
     skip: u64,
     conf: &State<Config>,
     client: &State<Client>,
-) -> Result<Pagination<Score>> {
+) -> ApiResult<Pagination<Score>> {
     all_scores(conf, client, limit, skip).await
 }
 
@@ -64,7 +64,7 @@ pub async fn search_scores(
     parameters: ScoreSearchParameters,
     conf: &State<Config>,
     client: &State<Client>,
-) -> Result<FindResponse<Score>> {
+) -> ApiResult<FindResponse<Score>> {
     database::score::search_scores(conf, client, parameters).await
 }
 
@@ -79,7 +79,11 @@ pub async fn search_scores(
 /// returns: Result<Json<Score>, Error>
 #[openapi(tag = "Archive")]
 #[get("/<id>")]
-pub async fn get_score(id: String, conf: &State<Config>, client: &State<Client>) -> Result<Score> {
+pub async fn get_score(
+    id: String,
+    conf: &State<Config>,
+    client: &State<Client>,
+) -> ApiResult<Score> {
     database::score::get_score(conf, client, id).await
 }
 
@@ -98,7 +102,7 @@ pub async fn put_score(
     score: Json<Score>,
     conf: &State<Config>,
     client: &State<Client>,
-) -> Result<Score> {
+) -> ApiResult<Score> {
     database::score::put_score(conf, client, score.0).await
 }
 
@@ -119,6 +123,6 @@ pub async fn delete_score(
     rev: String,
     conf: &State<Config>,
     client: &State<Client>,
-) -> Result<OperationResponse> {
+) -> ApiResult<OperationResponse> {
     database::score::delete_score(conf, client, id, rev).await
 }

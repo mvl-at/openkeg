@@ -15,7 +15,7 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-use crate::api_result::Error;
+use crate::openapi::ApiError;
 use okapi::map;
 use okapi::openapi3::{
     Object, ParameterValue, RefOr, Response, Responses, SecurityRequirement, SecurityScheme,
@@ -152,8 +152,8 @@ pub struct AuthenticationResponder {
     pub(crate) renewal_token_required: bool,
 }
 
-fn authorization_error() -> Error {
-    Error {
+fn authorization_error() -> ApiError {
+    ApiError {
         err: "Authentication Failure".to_string(),
         msg: Some("Something went wrong during the authentication either wrong credentials or server errors, due to security reasons no more details are provided.".to_string()),
         http_status_code: Status::Unauthorized.code,
