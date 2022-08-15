@@ -368,6 +368,11 @@ impl Default for DatabaseMapping {
     }
 }
 
+/// Read the configuration from `keg.toml` and set the `KEG_` prefix for all rocket related environment variables.
+/// Furthermore, the profile will be selected.
+/// Note, that the functionality to specify another `keg.toml` path via the `KEG_CONFIG` environment variable is currently broken.
+///
+/// returns: Figment for the configuration  
 pub fn read_config() -> Figment {
     Figment::from(rocket::Config::default())
         .merge(Serialized::defaults(Config::default()))
