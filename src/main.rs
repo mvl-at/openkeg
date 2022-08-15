@@ -18,12 +18,14 @@
 #[macro_use]
 extern crate rocket;
 
+use std::env;
 use std::sync::Arc;
 
 use figment::Figment;
 use ldap3::tokio::task;
 use okapi::openapi3::OpenApi;
 use reqwest::Client;
+use rocket::config::Ident;
 use rocket::fairing::AdHoc;
 use rocket::tokio::sync::RwLock;
 use rocket::{Build, Rocket};
@@ -58,7 +60,10 @@ async fn main() {
         "Welcome to OpenKeg {} - The backend of the Musikverein Leopoldsdorf!",
         env!("CARGO_PKG_VERSION")
     );
-    let figment = config::read_config();
+    let figment = config::read_config().merge((
+        "ident",
+        Ident::try_new(keg_user_agent()).expect("Valid ident for server response"),
+    ));
     let member_state = MemberState::mutex();
     let mut server_result = create_server(figment).manage(member_state);
     server_result = manage_keys(server_result).attach(Cors);
@@ -69,6 +74,21 @@ async fn main() {
         Ok(_) => info!("Shutdown OpenKeg!"),
         Err(err) => error!("failed to start: {}", err.to_string()),
     }
+}
+
+/// Generate the [String] used for identifying the server software through the network such as HTTP.
+/// The format will be `{PKG_NAME}/{PKG_VERSION} ({OS} {ARCH})`.
+/// An example would be `openkeg/1.3 (linux risc64)`.
+///
+/// returns: String which contains the version
+pub fn keg_user_agent() -> String {
+    format!(
+        "{}/{} ({} {})",
+        env!("CARGO_PKG_NAME"),
+        env!("CARGO_PKG_VERSION"),
+        env::consts::OS,
+        env::consts::ARCH
+    )
 }
 
 fn create_server(figment: Figment) -> Rocket<Build> {
