@@ -48,6 +48,7 @@ mod info;
 mod ldap;
 mod members;
 mod openapi;
+/// Module which provides functionality for users in the context of the rest interface, not (only) members.
 mod user;
 
 pub type MemberStateMutex = Arc<RwLock<MemberState>>;
@@ -132,7 +133,7 @@ fn mount_controller_routes(mut rocket: Rocket<Build>) -> Rocket<Build> {
         "/books" => archive::get_books_routes_and_docs(&openapi_settings),
         "/statistics" => archive::get_statistics_routes_and_docs(&openapi_settings),
         "/members" => members::get_routes_and_docs(&openapi_settings),
-        "/user" => user::get_routes_and_docs(&openapi_settings),
+        "/users" => user::get_routes_and_docs(&openapi_settings),
     };
     rocket.mount("/", get_info_routes_and_docs(&openapi_settings).0.to_vec())
 }

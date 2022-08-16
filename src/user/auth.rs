@@ -36,9 +36,12 @@ use crate::user::key::PublicKey;
 use crate::user::tokens::validate_token;
 use crate::MemberStateMutex;
 
+/// The basic auth structure as used in the HTTP protocol.
 #[non_exhaustive]
 pub struct BasicAuth {
+    /// The username part of the header.
     pub username: String,
+    /// The password part of the header.
     pub password: String,
 }
 
@@ -152,6 +155,8 @@ pub struct AuthenticationResponder {
     pub(crate) renewal_token_required: bool,
 }
 
+/// A generic authentication error used to hide the real issue from the user.
+/// The purpose is to make an attack more difficult than with a more verbose error.
 fn authorization_error() -> ApiError {
     ApiError {
         err: "Authentication Failure".to_string(),
