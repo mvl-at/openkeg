@@ -19,8 +19,8 @@ use rocket::State;
 use rocket_okapi::openapi;
 
 use crate::auth::authenticate;
+use crate::user::auth::{AuthenticationResponder, BasicAuth};
 use crate::user::key::PrivateKey;
-use crate::user::model::{AuthenticationResponder, BasicAuth};
 use crate::user::tokens::generate_token;
 use crate::{Config, MemberStateMutex};
 
@@ -38,17 +38,18 @@ use crate::{Config, MemberStateMutex};
 /// # Arguments
 ///
 /// * `auth`: the structure which holds the credentials to use for authentication
-/// * `config`: the application configuration
+/// * `private_key`: the private key to sign the jwt with
 /// * `member_state`: the current member state
+/// * `config`: the application configuration
 ///
 /// returns: Result<Json<()>, Error>
 #[openapi(tag = "Self Service")]
 #[get("/login")]
 pub async fn login(
     auth: BasicAuth,
-    config: &State<Config>,
     private_key: &State<PrivateKey>,
     member_state: &State<MemberStateMutex>,
+    config: &State<Config>,
 ) -> AuthenticationResponder {
     let mut member_state_clone = member_state.inner().clone();
     authenticate(

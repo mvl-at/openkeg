@@ -17,15 +17,14 @@
 
 use crate::config::Config;
 use crate::ldap::LdapDeserializable;
-use crate::members::state::{HonoraryMembers, MembersByRegister, RegisterEntry, Sutlers};
+use crate::member::state::{HonoraryMembers, MembersByRegister, RegisterEntry, Sutlers};
+use crate::openapi::SchemaExample;
 use ldap3::SearchEntry;
 use rocket::serde::{Deserialize, Serialize};
 use rocket_okapi::JsonSchema;
 use std::cmp::Ordering;
 use std::collections::{HashMap, LinkedList};
 use std::hash::Hash;
-
-use crate::schema_util::SchemaExample;
 
 /// Representation of the whole crew intended to use for the REST API.
 #[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema)]
@@ -36,7 +35,7 @@ pub struct Crew {
     pub musicians: LinkedList<WebRegister>,
     /// The sutlers of the crew
     pub sutlers: LinkedList<WebMember>,
-    /// The honorary members
+    /// The honorary member
     pub honorary_members: LinkedList<WebMember>,
 }
 
@@ -49,7 +48,7 @@ pub struct WebRegister {
     pub name: String,
     /// The plural name of this register
     pub name_plural: String,
-    /// The members which are part of this register
+    /// The member which are part of this register
     pub members: LinkedList<WebMember>,
 }
 
@@ -227,10 +226,7 @@ impl WebMemberSensitives {
             mobile: member.mobile.clone(),
             birthday: member.birthday.to_string(),
             mail: member.mail.clone(),
-            address: member
-                .address
-                .as_ref()
-                .map(WebAddress::from_address),
+            address: member.address.as_ref().map(WebAddress::from_address),
         }
     }
 }
@@ -370,12 +366,14 @@ impl LdapDeserializable<Option<Address>> for Address {
         let mapping = &config.ldap.address_mapping;
         if !contains_all(
             attrs,
-            &[mapping.country_code.to_string(),
+            &[
+                mapping.country_code.to_string(),
                 mapping.postal_code.to_string(),
                 mapping.city.to_string(),
                 mapping.house_number.to_string(),
                 mapping.state.to_string(),
-                mapping.street.to_string()],
+                mapping.street.to_string(),
+            ],
         ) {
             return None;
         }

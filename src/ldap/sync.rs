@@ -22,11 +22,11 @@ use rocket::tokio;
 
 use crate::config::{Config, LdapConfig};
 use crate::ldap::{search_entries, LdapDeserializable};
-use crate::members::model::{Group, Member};
-use crate::members::state::{MemberState, RegisterEntry};
+use crate::member::model::{Group, Member};
+use crate::member::state::{MemberState, RegisterEntry};
 use crate::MemberStateMutex;
 
-/// Synchronize all members and groups with the directory server.
+/// Synchronize all member and groups with the directory server.
 /// This includes transformations into the desired data structures which also includes sorting.
 /// Note that this modifies the provided structures but they only will be modified on success.
 /// If one of the fetching operations from the directory server fails, nothing will be modified in order to avoid inconsistency.
@@ -68,7 +68,7 @@ pub async fn synchronize_members_and_groups(conf: &Config, member_state: &mut Me
     info!("Done with user synchronization")
 }
 
-/// Constructs the sorted members by register collection and saves it to the application state.
+/// Constructs the sorted member by register collection and saves it to the application state.
 fn construct_members_by_register(
     member_state: &mut MemberState,
     member_result: Vec<Member>,
@@ -137,7 +137,7 @@ async fn fetch_results(
     LdapError,
 > {
     let members = fetch_entries::<Member, Member>(
-        "members",
+        "member",
         &ldap_conf.member_base,
         &ldap_conf.member_filter,
         conf,
@@ -151,7 +151,7 @@ async fn fetch_results(
     )
     .await?;
     let honoraries = fetch_entries::<Member, Member>(
-        "honorary members",
+        "honorary member",
         &ldap_conf.honorary_base,
         &ldap_conf.honorary_filter,
         conf,
@@ -200,7 +200,7 @@ where
     Ok(ldap_entries)
 }
 
-/// Runs the task to synchronize all members and groups and attaches it to the member state.
+/// Runs the task to synchronize all member and groups and attaches it to the member state.
 /// This task runs periodically as configured and thus will run as long as the application lives.
 /// # Arguments
 ///

@@ -20,8 +20,8 @@ use jsonwebtoken::errors::{Error, ErrorKind};
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use rocket::serde::{Deserialize, Serialize};
 
-use crate::members::model::Member;
-use crate::members::state::{AllMembers, Repository};
+use crate::member::model::Member;
+use crate::member::state::{AllMembers, Repository};
 use crate::user::key::{PrivateKey, PublicKey};
 use crate::Config;
 
@@ -83,7 +83,7 @@ pub fn generate_token(
 ///
 /// * `token`: the jwt to validate
 /// * `renewal`: `true` of the token is expected to be a refresh token or `false` it is expected to be a request token
-/// * `members`: the members of the application
+/// * `member`: the member of the application
 /// * `public_key`: the public key used to ensure the signature
 ///
 /// returns: Result<Member, ()>

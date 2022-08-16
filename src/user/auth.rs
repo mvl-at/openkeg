@@ -15,7 +15,7 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-use crate::api_result::Error;
+use crate::openapi::ApiError;
 use okapi::map;
 use okapi::openapi3::{
     Object, ParameterValue, RefOr, Response, Responses, SecurityRequirement, SecurityScheme,
@@ -31,14 +31,17 @@ use rocket_okapi::request::{OpenApiFromRequest, RequestHeaderInput};
 use rocket_okapi::response::OpenApiResponderInner;
 use std::io::Cursor;
 
-use crate::members::model::Member;
+use crate::member::model::Member;
 use crate::user::key::PublicKey;
 use crate::user::tokens::validate_token;
 use crate::MemberStateMutex;
 
+/// The basic auth structure as used in the HTTP protocol.
 #[non_exhaustive]
 pub struct BasicAuth {
+    /// The username part of the header.
     pub username: String,
+    /// The password part of the header.
     pub password: String,
 }
 
@@ -121,7 +124,7 @@ impl<'r> FromRequest<'r> for Member {
         let token = bearer.replace("Bearer ", "");
         let members = request.rocket().state::<MemberStateMutex>();
         if members.is_none() {
-            warn!("Unable to retrieve members, requests using authentication will not work");
+            warn!("Unable to retrieve member, requests using authentication will not work");
             return Forward(());
         }
         let public_key = request.rocket().state::<PublicKey>();
@@ -152,8 +155,10 @@ pub struct AuthenticationResponder {
     pub(crate) renewal_token_required: bool,
 }
 
-fn authorization_error() -> Error {
-    Error {
+/// A generic authentication error used to hide the real issue from the user.
+/// The purpose is to make an attack more difficult than with a more verbose error.
+fn authorization_error() -> ApiError {
+    ApiError {
         err: "Authentication Failure".to_string(),
         msg: Some("Something went wrong during the authentication either wrong credentials or server errors, due to security reasons no more details are provided.".to_string()),
         http_status_code: Status::Unauthorized.code,

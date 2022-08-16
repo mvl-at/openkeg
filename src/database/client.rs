@@ -15,21 +15,90 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-use reqwest::{Client, Method, RequestBuilder, StatusCode, Url};
+use crate::openapi::{ApiError, SchemaExample};
+use crate::{keg_user_agent, Config};
+use reqwest::{Client, ClientBuilder, Method, RequestBuilder, StatusCode, Url};
 use rocket::http::Status;
 use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+use std::error::Error;
 use uuid::Uuid;
 
-use crate::api_result::Error;
-use crate::database::authenticate;
-use crate::schema_util::SchemaExample;
-use crate::Config;
+/// An alias for the database HTTP client.
+/// Used to be able to let rocket manage multiple HTTP clients, each for its specialized purpose.
+/// May be replaced with a tuple struct in the future.
+pub type DatabaseClient = Client;
 
-mod fuzzy;
-pub mod score;
-pub mod statistic;
+/// Initialize the database client and configures it.
+/// If the initialization fails this function will panic.
+/// After the initialization this functions tries to authenticate against the database interface using cookies.
+/// When this fails, an error will be printed.
+///
+/// # Arguments
+///
+/// * `conf`: the application configuration
+///
+/// returns: the configured [`DatabaseClient`]
+pub async fn initialize_client(conf: &Config) -> DatabaseClient {
+    let client = ClientBuilder::new()
+        .user_agent(keg_user_agent().as_str())
+        .cookie_store(true)
+        .build()
+        .map_err(|e| {
+            error!("Unable to initialize http client: {}", e);
+            e
+        })
+        .expect("First database client");
+    authenticate(conf, &client)
+        .await
+        .map_err(|e| {
+            error!("Unable to authenticate http client: {}", e);
+            e
+        })
+        .expect("First authenticated client");
+    client
+}
+
+/// Internal holder for username, password credentials.
+/// Only used for convenience.
+#[derive(Serialize)]
+struct Credentials {
+    /// The username.
+    name: String,
+    /// The password.
+    password: String,
+}
+
+impl From<&Config> for Credentials {
+    fn from(config: &Config) -> Self {
+        Credentials {
+            name: config.database.username.to_string(),
+            password: config.database.password.to_string(),
+        }
+    }
+}
+
+/// The authentication function to perform an HTTP authentication request against the database server.
+/// If the process was successful, the authentication cookie will be stored in the cookie store.
+///
+/// # Arguments
+///
+/// * `conf`: the application configuration
+/// * `client`: the HTTP client to use, cookie support is required
+///
+/// returns: ()
+pub(crate) async fn authenticate(conf: &Config, client: &Client) -> Result<(), Box<dyn Error>> {
+    let url = Url::parse(&*format!(
+        "{}{}",
+        conf.database.url, conf.database.database_mapping.authentication
+    ))?;
+    let request = client.post(url).form(&<Credentials>::from(conf)).build()?;
+    let response = client.execute(request).await?;
+    response.error_for_status()?;
+    info!("Authentication to the database interface was successful");
+    Ok(())
+}
 
 /// A page for pagination which is used for huge collections as the score archive.
 #[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema)]
@@ -149,17 +218,21 @@ impl SchemaExample for ExecutionStats {
     }
 }
 
+/// The structure which CouchDB returns when an error happens.
+/// For internal use only, should be mapped to an application wide error such as [ApiError] as soon as possible.
 #[derive(Deserialize)]
-struct CouchError {
+struct DatabaseError {
+    /// The error message.
     error: String,
+    /// The reason why the error was triggered.
     reason: String,
 }
 
-impl CouchError {
-    fn into_error(self, status: StatusCode) -> Error {
-        Error {
-            err: self.error,
-            msg: Some(self.reason),
+impl From<(DatabaseError, StatusCode)> for ApiError {
+    fn from((error, status): (DatabaseError, StatusCode)) -> Self {
+        Self {
+            err: error.error,
+            msg: Some(error.reason),
             http_status_code: status.as_u16(),
         }
     }
@@ -187,8 +260,10 @@ impl SchemaExample for OperationResponse {
     }
 }
 
-fn request_error() -> Error {
-    Error {
+/// Provide a generic error message when something went wrong during the database request.
+/// This should only be used when no further error can be found out or should be hidden to the Rest interface consumer.
+fn request_error() -> ApiError {
+    ApiError {
         err: "Request Error".to_string(),
         msg: Some("The backend is unable to perform the request against the database".to_string()),
         http_status_code: Status::InternalServerError.code,
@@ -208,14 +283,14 @@ fn request_error() -> Error {
 /// * `parameters`: the query parameters being used for the request
 ///
 /// returns: Result<R, Error>
-async fn request<'a, R, P>(
+pub(crate) async fn request<'a, R, P>(
     conf: &Config,
     client: &Client,
     request_hook: Box<dyn FnOnce(RequestBuilder) -> RequestBuilder + Send + 'a>,
     method: Method,
     api_url: &str,
     parameters: &P,
-) -> Result<R, Error>
+) -> Result<R, ApiError>
 where
     P: Serialize + ?Sized,
     R: DeserializeOwned,
@@ -250,7 +325,7 @@ where
         info!("The session cookie seems to be expired, try to reauthenticate");
         authenticate(conf, client).await.map_err(|e| {
             warn!("Unable to re-authenticate to the database: {}", e);
-            Error {
+            ApiError {
                 err: "Database Error".to_string(),
                 msg: Some(
                     "Cannot connect to the database, please contact the administrator".to_string(),
@@ -258,7 +333,7 @@ where
                 http_status_code: Status::InternalServerError.code,
             }
         })?;
-        let request_clone = request_clone_optional.ok_or(Error {
+        let request_clone = request_clone_optional.ok_or(ApiError {
             err: "Database Error".to_string(),
             msg: Some("Unable to reproduce the request, you may try again immediately".to_string()),
             http_status_code: Status::ServiceUnavailable.code,
@@ -273,11 +348,11 @@ where
         status = response.status();
     }
     if !status.is_success() {
-        let couch_error = response.json::<CouchError>().await.map_err(|e| {
+        let couch_error = response.json::<DatabaseError>().await.map_err(|e| {
             warn!("Unable to return error to client: {}", e);
             request_error()
         })?;
-        return Err(couch_error.into_error(status));
+        return Err(ApiError::from((couch_error, status)));
     }
     let deserialized_body = response.json::<R>().await.map_err(|e| {
         warn!("Unable to deserialize a response from the database: {}", e);
@@ -294,11 +369,11 @@ where
 /// * `partition`: the partition which could contain the `id`
 ///
 /// returns: Result<(), Error>
-fn check_document_partition(id: &str, partition: &str) -> Result<(), Error> {
+pub(crate) fn check_document_partition(id: &str, partition: &str) -> Result<(), ApiError> {
     if id.starts_with(format!("{}:", partition).as_str()) {
         Ok(())
     } else {
-        Err(Error {
+        Err(ApiError {
             err: "invalid id".to_string(),
             msg: Some("the provided id starts with an invalid partition".to_string()),
             http_status_code: Status::UnprocessableEntity.code,
@@ -314,6 +389,6 @@ fn check_document_partition(id: &str, partition: &str) -> Result<(), Error> {
 /// * `partition`: the partition to generate the id for
 ///
 /// returns: String
-fn generate_document_id(partition: &str) -> String {
+pub(crate) fn generate_document_id(partition: &str) -> String {
     format!("{}:{}", partition, Uuid::new_v4())
 }

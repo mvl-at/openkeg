@@ -21,19 +21,19 @@ use rocket::serde::json::Json;
 use rocket::State;
 use rocket_okapi::openapi;
 
-use crate::api_result::{Error, Result};
 use crate::config::Config;
 use crate::ldap::sync::synchronize_members_and_groups;
-use crate::members::model::{Crew, Member, WebMember, WebRegister};
-use crate::members::photo::Photo;
-use crate::members::state::Repository;
+use crate::member::model::{Crew, Member, WebMember, WebRegister};
+use crate::member::photo::Photo;
+use crate::member::state::Repository;
+use crate::openapi::{ApiError, ApiResult};
 use crate::MemberStateMutex;
 
-/// Get all members without any sensitive data.
-/// Intended for the web representation of all members
+/// Get all member without any sensitive data.
+/// Intended for the web representation of all member
 #[openapi(tag = "Members")]
 #[get("/")]
-pub async fn all_members(member_state: &State<MemberStateMutex>) -> Result<Crew> {
+pub async fn all_members(member_state: &State<MemberStateMutex>) -> ApiResult<Crew> {
     let members = member_state.read().await;
     let member_mapper: &dyn Fn(&Member) -> WebMember = &|m| WebMember::from_member(m, true);
     Ok(Json(Crew::new(
@@ -50,7 +50,7 @@ pub async fn all_members(member_state: &State<MemberStateMutex>) -> Result<Crew>
 /// # Arguments
 ///
 /// * `username`: the username of the member whose photo is requested
-/// * `member_state`: the state of all members
+/// * `member_state`: the state of all member
 ///
 /// returns: Result<Photo, Error>
 #[openapi(tag = "Members")]
@@ -58,12 +58,12 @@ pub async fn all_members(member_state: &State<MemberStateMutex>) -> Result<Crew>
 pub async fn photo(
     username: String,
     member_state: &State<MemberStateMutex>,
-) -> std::result::Result<Photo, Error> {
+) -> Result<Photo, ApiError> {
     let member_state_lock = member_state.read().await;
     member_state_lock.all_members.find(&username).map_or_else(
         || {
             debug!("unable to find member with username {}", username);
-            Err(Error {
+            Err(ApiError {
                 err: "Not Found".to_string(),
                 msg: Some("No member with such username".to_string()),
                 http_status_code: Status::NotFound.code,
@@ -73,14 +73,17 @@ pub async fn photo(
     )
 }
 
-/// Synchronize all members.
+/// Synchronize all member.
 ///
 /// # Arguments
 ///
 /// * `sync` - a bool which indicates if the synchronization should block this call or not
 #[openapi(tag = "Members")]
 #[post("/synchronize")]
-pub fn synchronize(config: &State<Config>, member_state: &State<MemberStateMutex>) -> Result<()> {
+pub fn synchronize(
+    config: &State<Config>,
+    member_state: &State<MemberStateMutex>,
+) -> ApiResult<()> {
     let conf_copy = config.inner().clone();
     let mut member_state_clone = member_state.inner().clone();
     let fetch_task = async move {
@@ -90,7 +93,7 @@ pub fn synchronize(config: &State<Config>, member_state: &State<MemberStateMutex
     Ok(Json(()))
 }
 
-/// Print all members to the debug console.
+/// Print all member to the debug console.
 /// Only for debug purposes.
 #[cfg(feature = "debug")]
 #[openapi(tag = "Members")]

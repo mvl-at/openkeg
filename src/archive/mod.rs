@@ -20,10 +20,9 @@ use rocket_okapi::openapi_get_routes_spec;
 use rocket_okapi::settings::OpenApiSettings;
 
 pub mod book;
-pub mod database;
 pub mod model;
 pub mod score;
-mod statistic;
+pub mod statistic;
 
 pub fn get_scores_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
     openapi_get_routes_spec![

@@ -15,9 +15,8 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-use crate::api_result::Result;
 use crate::keg_user_agent;
-use crate::schema_util::SchemaExample;
+use crate::openapi::{ApiResult, SchemaExample};
 use chrono::Local;
 use okapi::openapi3::OpenApi;
 use okapi::schemars::JsonSchema;
@@ -70,7 +69,7 @@ impl SchemaExample for ServerInfo {
 /// returns: Result<Json<ServerInfo>, Error>
 #[openapi(tag = "Misc")]
 #[get("/")]
-pub fn info(info_state: &State<ServerInfo>) -> Result<ServerInfo> {
+pub fn info(info_state: &State<ServerInfo>) -> ApiResult<ServerInfo> {
     Ok(Json((*info_state).clone()))
 }
 

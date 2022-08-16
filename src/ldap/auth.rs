@@ -22,8 +22,8 @@ use std::fmt::Formatter;
 use ldap3::LdapConnAsync;
 
 use crate::config::Config;
-use crate::members::model::Member;
-use crate::members::state::Repository;
+use crate::member::model::Member;
+use crate::member::state::Repository;
 use crate::MemberStateMutex;
 
 /// Error which during the authentication.
@@ -63,7 +63,7 @@ impl Display for AuthenticationError<'_> {
 /// # Arguments
 ///
 /// * `config`: the application configuration
-/// * `member_state`: the state which holds the members
+/// * `member_state`: the state which holds the member
 /// * `username`: the username to use for authentication. this is _not_ the dn but the value of the username attributes of the member
 /// * `password`: the password to use for the authentication
 ///

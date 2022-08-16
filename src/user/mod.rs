@@ -19,11 +19,17 @@ use okapi::openapi3::OpenApi;
 use rocket_okapi::openapi_get_routes_spec;
 use rocket_okapi::settings::OpenApiSettings;
 
-pub mod controller;
+/// The module for the authentication process.
+/// Contains mostly implementations to deserialize structures from request during the authentication process.
+pub mod auth;
+/// The module to manage the private and public keys used to sign and verify JWT signatures.
 pub mod key;
-pub mod model;
+/// A controller module for endpoints which provides self-service functionality to the user.
+mod self_service;
+/// Module to manage JWTs.
+/// Contains the possibility to generate and verify them.
 pub mod tokens;
 
 pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
-    openapi_get_routes_spec![settings: controller::login]
+    openapi_get_routes_spec![settings: self_service::login]
 }

@@ -20,21 +20,21 @@ use std::sync::Arc;
 
 use rocket::tokio::sync::RwLock;
 
-use crate::members::model::{Group, Member};
+use crate::member::model::{Group, Member};
 use crate::MemberStateMutex;
 
-/// All members with no further order
+/// All member with no further order
 pub type AllMembers = HashSet<Member>;
 /// All registers with no further order
 pub type Registers = LinkedList<Group>;
 /// All executive roles with no further order
 pub type Executives = HashSet<Group>;
-/// All members grouped by their register.
-/// Registers are ordered by their name and members are ordered by their joining, lastname and firstname
+/// All member grouped by their register.
+/// Registers are ordered by their name and member are ordered by their joining, lastname and firstname
 pub type MembersByRegister = LinkedList<RegisterEntry>;
-/// All members which are sutlers
+/// All member which are sutlers
 pub type Sutlers = LinkedList<Member>;
-/// All honorary members
+/// All honorary member
 pub type HonoraryMembers = LinkedList<Member>;
 
 pub trait Repository<ID, E> {
@@ -74,10 +74,10 @@ impl MemberState {
 }
 
 #[derive(Clone)]
-/// An entry which holds a register and all corresponding members
+/// An entry which holds a register and all corresponding member
 pub struct RegisterEntry {
     /// The register of this entry
     pub register: Group,
-    /// The members of this entry
+    /// The member of this entry
     pub members: LinkedList<Member>,
 }

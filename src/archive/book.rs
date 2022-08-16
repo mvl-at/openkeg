@@ -19,11 +19,10 @@ use reqwest::Client;
 use rocket::State;
 use rocket_okapi::openapi;
 
-use crate::api_result::Result;
-use crate::archive::database;
-use crate::archive::database::FindResponse;
 use crate::archive::model::Score;
+use crate::openapi::ApiResult;
 use crate::Config;
+use crate::database::client::FindResponse;
 
 /// Fetch all scores which are part of the given `book`.
 /// The scores are sorted as usual in books which means the following order:
@@ -45,6 +44,6 @@ pub async fn get_book_content(
     conf: &State<Config>,
     client: &State<Client>,
     name: String,
-) -> Result<FindResponse<Score>> {
-    database::score::get_book_content(conf, client, name).await
+) -> ApiResult<FindResponse<Score>> {
+    crate::database::score::get_book_content(conf, client, name).await
 }

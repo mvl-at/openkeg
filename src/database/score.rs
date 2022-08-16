@@ -24,12 +24,13 @@ use rocket::serde::json::Json;
 use schemars::JsonSchema;
 use serde_json::{json, Value};
 
-use crate::api_result::{Error, Result};
-use crate::archive::database::{
-    check_document_partition, fuzzy, generate_document_id, request, FindResponse,
-    OperationResponse, Pagination,
-};
 use crate::archive::model::{Score, ScoreSearchTermField};
+use crate::database::client::{
+    check_document_partition, generate_document_id, request, FindResponse, OperationResponse,
+    Pagination,
+};
+use crate::database::fuzzy;
+use crate::openapi::{ApiError, ApiResult};
 use crate::Config;
 
 pub async fn all_scores(
@@ -37,7 +38,7 @@ pub async fn all_scores(
     client: &Client,
     limit: u64,
     skip: u64,
-) -> Result<Pagination<Score>> {
+) -> ApiResult<Pagination<Score>> {
     let mut parameters = HashMap::new();
     parameters.insert("include_docs".to_string(), "true".to_string());
     parameters.insert("limit".to_string(), limit.to_string());
@@ -91,7 +92,7 @@ pub async fn search_scores(
     conf: &Config,
     client: &Client,
     parameters: ScoreSearchParameters,
-) -> Result<FindResponse<Score>> {
+) -> ApiResult<FindResponse<Score>> {
     let filter = construct_filter(parameters);
     debug!("Using filter to search scores: {}", filter);
     let parameters: HashMap<String, String> = HashMap::new();
@@ -116,7 +117,7 @@ pub async fn search_scores(
 /// * `client` the client to send the request with
 ///
 /// returns: Result<Json<Score>, Error>
-pub async fn get_score(conf: &Config, client: &Client, id: String) -> Result<Score> {
+pub async fn get_score(conf: &Config, client: &Client, id: String) -> ApiResult<Score> {
     check_document_partition(&id, &conf.database.score_partition)?;
     let parameters: HashMap<String, String> = HashMap::new();
     request(
@@ -140,11 +141,11 @@ pub async fn get_score(conf: &Config, client: &Client, id: String) -> Result<Sco
 /// * `conf`: the application configuration
 /// * `client`: the client to perform the request with
 /// * `score`: the score to insert
-pub async fn put_score<'de>(conf: &Config, client: &Client, mut score: Score) -> Result<Score> {
+pub async fn put_score<'de>(conf: &Config, client: &Client, mut score: Score) -> ApiResult<Score> {
     if (score.couch_id.is_none() && score.couch_revision.is_some())
         || (score.couch_id.is_some() && score.couch_revision.is_none())
     {
-        return Err(Error {
+        return Err(ApiError {
             err: "invalid id".to_string(),
             msg: Some("you must either provide both id and rev, in order to update a document, or provide none of them, in order to insert one".to_string()),
             http_status_code: Status::BadRequest.code,
@@ -191,7 +192,7 @@ pub async fn delete_score(
     client: &Client,
     id: String,
     rev: String,
-) -> Result<OperationResponse> {
+) -> ApiResult<OperationResponse> {
     check_document_partition(&id, &conf.database.score_partition)?;
     let mut parameters: HashMap<String, String> = HashMap::new();
     parameters.insert("rev".to_string(), rev);
@@ -225,7 +226,7 @@ pub async fn get_book_content(
     conf: &Config,
     client: &Client,
     book: String,
-) -> Result<FindResponse<Score>> {
+) -> ApiResult<FindResponse<Score>> {
     let mut response = search_scores(
         conf,
         client,

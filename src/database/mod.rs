@@ -15,7 +15,9 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-/// Trait for adds examples to API documentation
-pub trait SchemaExample {
-    fn example() -> Self;
-}
+/// A module which contains generic functionality for the database.
+/// The most important are client initialization, authentication, request and response types.
+pub mod client;
+mod fuzzy;
+pub mod score;
+pub mod statistic;

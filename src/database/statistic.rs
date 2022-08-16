@@ -20,17 +20,17 @@ use std::collections::HashMap;
 use reqwest::{Client, Method};
 use rocket::serde::json::Json;
 
-use crate::api_result::Result;
-use crate::archive::database::request;
 use crate::archive::model::CountStatistic;
 use crate::archive::statistic::CountStatisticType;
+use crate::database::client::request;
+use crate::openapi::ApiResult;
 use crate::Config;
 
 pub async fn count_statistic(
     conf: &Config,
     client: &Client,
     subject: CountStatisticType,
-) -> Result<CountStatistic> {
+) -> ApiResult<CountStatistic> {
     let db_mapping = &conf.database.database_mapping;
     let api_url = match subject {
         CountStatisticType::Genres => &db_mapping.genres_statistic,

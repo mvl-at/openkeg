@@ -20,12 +20,11 @@ use rocket::serde::json::Json;
 use rocket::State;
 use rocket_okapi::openapi;
 
-use crate::api_result::Result;
-use crate::archive::database;
-use crate::archive::database::score::{all_scores, ScoreSearchParameters};
-use crate::archive::database::{FindResponse, OperationResponse, Pagination};
 use crate::archive::model::Score;
+use crate::database::score::{all_scores, ScoreSearchParameters};
+use crate::openapi::ApiResult;
 use crate::Config;
+use crate::database::client::{FindResponse, OperationResponse, Pagination};
 
 /// Get all scores from the database with pagination.
 /// The parameters specify the value itself, the fields to search for and the ordering.
@@ -36,7 +35,7 @@ pub async fn get_scores(
     skip: u64,
     conf: &State<Config>,
     client: &State<Client>,
-) -> Result<Pagination<Score>> {
+) -> ApiResult<Pagination<Score>> {
     all_scores(conf, client, limit, skip).await
 }
 
@@ -64,8 +63,8 @@ pub async fn search_scores(
     parameters: ScoreSearchParameters,
     conf: &State<Config>,
     client: &State<Client>,
-) -> Result<FindResponse<Score>> {
-    database::score::search_scores(conf, client, parameters).await
+) -> ApiResult<FindResponse<Score>> {
+    crate::database::score::search_scores(conf, client, parameters).await
 }
 
 /// Find a single score by its id.
@@ -79,8 +78,12 @@ pub async fn search_scores(
 /// returns: Result<Json<Score>, Error>
 #[openapi(tag = "Archive")]
 #[get("/<id>")]
-pub async fn get_score(id: String, conf: &State<Config>, client: &State<Client>) -> Result<Score> {
-    database::score::get_score(conf, client, id).await
+pub async fn get_score(
+    id: String,
+    conf: &State<Config>,
+    client: &State<Client>,
+) -> ApiResult<Score> {
+    crate::database::score::get_score(conf, client, id).await
 }
 
 /// Insert a score into the database.
@@ -98,8 +101,8 @@ pub async fn put_score(
     score: Json<Score>,
     conf: &State<Config>,
     client: &State<Client>,
-) -> Result<Score> {
-    database::score::put_score(conf, client, score.0).await
+) -> ApiResult<Score> {
+    crate::database::score::put_score(conf, client, score.0).await
 }
 
 /// Delete a score by its id and revision.
@@ -119,6 +122,6 @@ pub async fn delete_score(
     rev: String,
     conf: &State<Config>,
     client: &State<Client>,
-) -> Result<OperationResponse> {
-    database::score::delete_score(conf, client, id, rev).await
+) -> ApiResult<OperationResponse> {
+    crate::database::score::delete_score(conf, client, id, rev).await
 }
