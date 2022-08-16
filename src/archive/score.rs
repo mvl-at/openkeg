@@ -28,6 +28,15 @@ use crate::database::client::{FindResponse, OperationResponse, Pagination};
 
 /// Get all scores from the database with pagination.
 /// The parameters specify the value itself, the fields to search for and the ordering.
+/// 
+/// # Arguments
+/// 
+/// `limit`: the maximum amount of returned rows
+/// `skip`: how many scores should be skipped
+/// `conf`: the application configuration
+/// `client`: the client to perform the database requests with
+/// 
+/// returns: ApiResult<Pagination<Score>>
 #[openapi(tag = "Archive")]
 #[get("/?<limit>&<skip>")]
 pub async fn get_scores(
