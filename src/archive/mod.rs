@@ -19,9 +19,13 @@ use okapi::openapi3::OpenApi;
 use rocket_okapi::openapi_get_routes_spec;
 use rocket_okapi::settings::OpenApiSettings;
 
+/// Controller module to handle endpoints regarding books.
 pub mod book;
+/// Module which holds the model for this parent module.
 pub mod model;
+/// Controller module to handle endpoints regarding scores.
 pub mod score;
+/// Controller module to handle endpoints regarding statistics.
 pub mod statistic;
 
 pub fn get_scores_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {

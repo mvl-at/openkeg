@@ -40,14 +40,21 @@ use crate::member::state::MemberState;
 use crate::openapi::{custom_openapi_spec, openapi_settings};
 use crate::user::key::{read_private_key, read_public_key};
 
+/// Module which handles the archive rest interface.
 mod archive;
+/// Module which handles the application configuration.
 mod config;
+/// Module which adds HTTP CORS to the application server.
 mod cors;
+/// Module which provides the interface to the database.
 mod database;
+/// Module which provides the server info.
 mod info;
+/// Module which handles the communication to the directory server.
 mod ldap;
 /// Module which provides the rest interface to fetch member and group information.
 mod member;
+/// Module which provides documentation via OpenApi.
 mod openapi;
 /// Module which provides functionality for users in the context of the rest interface, not (only) member.
 mod user;

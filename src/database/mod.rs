@@ -18,6 +18,10 @@
 /// A module which contains generic functionality for the database.
 /// The most important are client initialization, authentication, request and response types.
 pub mod client;
+/// Module which is responsible to provide fuzzy search.
+/// This is implemented with regular expressions.
 mod fuzzy;
+/// Module which contains the database requests for score related services.
 pub mod score;
+/// Module which contains the database requests for statistic related services.
 pub mod statistic;
