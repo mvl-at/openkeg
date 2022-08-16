@@ -23,14 +23,14 @@ use rocket_okapi::openapi;
 
 use crate::config::Config;
 use crate::ldap::sync::synchronize_members_and_groups;
-use crate::members::model::{Crew, Member, WebMember, WebRegister};
-use crate::members::photo::Photo;
-use crate::members::state::Repository;
+use crate::member::model::{Crew, Member, WebMember, WebRegister};
+use crate::member::photo::Photo;
+use crate::member::state::Repository;
 use crate::openapi::{ApiError, ApiResult};
 use crate::MemberStateMutex;
 
-/// Get all members without any sensitive data.
-/// Intended for the web representation of all members
+/// Get all member without any sensitive data.
+/// Intended for the web representation of all member
 #[openapi(tag = "Members")]
 #[get("/")]
 pub async fn all_members(member_state: &State<MemberStateMutex>) -> ApiResult<Crew> {
@@ -50,7 +50,7 @@ pub async fn all_members(member_state: &State<MemberStateMutex>) -> ApiResult<Cr
 /// # Arguments
 ///
 /// * `username`: the username of the member whose photo is requested
-/// * `member_state`: the state of all members
+/// * `member_state`: the state of all member
 ///
 /// returns: Result<Photo, Error>
 #[openapi(tag = "Members")]
@@ -73,7 +73,7 @@ pub async fn photo(
     )
 }
 
-/// Synchronize all members.
+/// Synchronize all member.
 ///
 /// # Arguments
 ///
@@ -93,7 +93,7 @@ pub fn synchronize(
     Ok(Json(()))
 }
 
-/// Print all members to the debug console.
+/// Print all member to the debug console.
 /// Only for debug purposes.
 #[cfg(feature = "debug")]
 #[openapi(tag = "Members")]

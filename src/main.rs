@@ -36,7 +36,7 @@ use crate::database::client::initialize_client;
 use crate::info::{get_info_routes_and_docs, ServerInfo};
 use crate::ldap::auth;
 use crate::ldap::sync::member_synchronization_task;
-use crate::members::state::MemberState;
+use crate::member::state::MemberState;
 use crate::openapi::{custom_openapi_spec, openapi_settings};
 use crate::user::key::{read_private_key, read_public_key};
 
@@ -46,9 +46,10 @@ mod cors;
 mod database;
 mod info;
 mod ldap;
-mod members;
+/// Module which provides the rest interface to fetch member and group information.
+mod member;
 mod openapi;
-/// Module which provides functionality for users in the context of the rest interface, not (only) members.
+/// Module which provides functionality for users in the context of the rest interface, not (only) member.
 mod user;
 
 pub type MemberStateMutex = Arc<RwLock<MemberState>>;
@@ -132,7 +133,7 @@ fn mount_controller_routes(mut rocket: Rocket<Build>) -> Rocket<Build> {
         "/scores" => archive::get_scores_routes_and_docs(&openapi_settings),
         "/books" => archive::get_books_routes_and_docs(&openapi_settings),
         "/statistics" => archive::get_statistics_routes_and_docs(&openapi_settings),
-        "/members" => members::get_routes_and_docs(&openapi_settings),
+        "/member" => member::get_routes_and_docs(&openapi_settings),
         "/users" => user::get_routes_and_docs(&openapi_settings),
     };
     rocket.mount("/", get_info_routes_and_docs(&openapi_settings).0.to_vec())

@@ -56,9 +56,9 @@ pub struct LdapConfig {
     pub password: Option<String>,
     /// The synchronization interval for the member and groups in *seconds*.
     pub synchronization_interval: u64,
-    /// The base dn where to start to search for members.
+    /// The base dn where to start to search for member.
     pub member_base: String,
-    /// The filter to use to search members.
+    /// The filter to use to search member.
     pub member_filter: String,
     /// The base dn where to start to search for sutlers.
     pub sutler_base: String,
@@ -108,7 +108,7 @@ impl Default for LdapConfig {
     }
 }
 
-/// The mapping to members.
+/// The mapping to member.
 /// This refers to an LDAP structure which likely has the 'mvlMember' object class.
 /// The attribute descriptions refer to the content of the object attribute and provide an example often seen for the mapping.
 #[derive(Debug, Serialize, Deserialize, Clone)]

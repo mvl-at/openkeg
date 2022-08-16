@@ -31,7 +31,7 @@ use rocket_okapi::request::{OpenApiFromRequest, RequestHeaderInput};
 use rocket_okapi::response::OpenApiResponderInner;
 use std::io::Cursor;
 
-use crate::members::model::Member;
+use crate::member::model::Member;
 use crate::user::key::PublicKey;
 use crate::user::tokens::validate_token;
 use crate::MemberStateMutex;
@@ -124,7 +124,7 @@ impl<'r> FromRequest<'r> for Member {
         let token = bearer.replace("Bearer ", "");
         let members = request.rocket().state::<MemberStateMutex>();
         if members.is_none() {
-            warn!("Unable to retrieve members, requests using authentication will not work");
+            warn!("Unable to retrieve member, requests using authentication will not work");
             return Forward(());
         }
         let public_key = request.rocket().state::<PublicKey>();

@@ -17,7 +17,7 @@
 
 use crate::config::Config;
 use crate::ldap::LdapDeserializable;
-use crate::members::state::{HonoraryMembers, MembersByRegister, RegisterEntry, Sutlers};
+use crate::member::state::{HonoraryMembers, MembersByRegister, RegisterEntry, Sutlers};
 use crate::openapi::SchemaExample;
 use ldap3::SearchEntry;
 use rocket::serde::{Deserialize, Serialize};
@@ -35,7 +35,7 @@ pub struct Crew {
     pub musicians: LinkedList<WebRegister>,
     /// The sutlers of the crew
     pub sutlers: LinkedList<WebMember>,
-    /// The honorary members
+    /// The honorary member
     pub honorary_members: LinkedList<WebMember>,
 }
 
@@ -48,7 +48,7 @@ pub struct WebRegister {
     pub name: String,
     /// The plural name of this register
     pub name_plural: String,
-    /// The members which are part of this register
+    /// The member which are part of this register
     pub members: LinkedList<WebMember>,
 }
 
