@@ -20,9 +20,9 @@ use rocket::State;
 use rocket_okapi::openapi;
 
 use crate::archive::model::Score;
+use crate::database::client::FindResponse;
 use crate::openapi::ApiResult;
 use crate::Config;
-use crate::database::client::FindResponse;
 
 /// Fetch all scores which are part of the given `book`.
 /// The scores are sorted as usual in books which means the following order:
@@ -33,17 +33,17 @@ use crate::database::client::FindResponse;
 ///
 /// # Arguments
 ///
+/// * `name`: the name of the book to fetch
 /// * `conf`: the application configuration
 /// * `client`: the client to send the database requests with
-/// * `name`: the name of the book to fetch
 ///
 /// returns: Result<Json<FindResponse<Score>>, Error>
 #[openapi(tag = "Archive")]
 #[get("/<name>/content")]
 pub async fn get_book_content(
+    name: String,
     conf: &State<Config>,
     client: &State<Client>,
-    name: String,
 ) -> ApiResult<FindResponse<Score>> {
     crate::database::score::get_book_content(conf, client, name).await
 }

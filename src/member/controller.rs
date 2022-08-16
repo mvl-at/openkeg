@@ -81,8 +81,8 @@ pub async fn photo(
 #[openapi(tag = "Members")]
 #[post("/synchronize")]
 pub fn synchronize(
-    config: &State<Config>,
     member_state: &State<MemberStateMutex>,
+    config: &State<Config>,
 ) -> ApiResult<()> {
     let conf_copy = config.inner().clone();
     let mut member_state_clone = member_state.inner().clone();
