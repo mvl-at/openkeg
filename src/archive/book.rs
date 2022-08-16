@@ -20,9 +20,9 @@ use rocket::State;
 use rocket_okapi::openapi;
 
 use crate::archive::model::Score;
-use crate::database::FindResponse;
 use crate::openapi::ApiResult;
 use crate::Config;
+use crate::database::client::FindResponse;
 
 /// Fetch all scores which are part of the given `book`.
 /// The scores are sorted as usual in books which means the following order:

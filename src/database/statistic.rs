@@ -22,7 +22,7 @@ use rocket::serde::json::Json;
 
 use crate::archive::model::CountStatistic;
 use crate::archive::statistic::CountStatisticType;
-use crate::database::request;
+use crate::database::client::request;
 use crate::openapi::ApiResult;
 use crate::Config;
 

@@ -25,10 +25,11 @@ use schemars::JsonSchema;
 use serde_json::{json, Value};
 
 use crate::archive::model::{Score, ScoreSearchTermField};
-use crate::database::{
-    check_document_partition, fuzzy, generate_document_id, request, FindResponse,
-    OperationResponse, Pagination,
+use crate::database::client::{
+    check_document_partition, generate_document_id, request, FindResponse, OperationResponse,
+    Pagination,
 };
+use crate::database::fuzzy;
 use crate::openapi::{ApiError, ApiResult};
 use crate::Config;
 

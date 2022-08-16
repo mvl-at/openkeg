@@ -22,9 +22,9 @@ use rocket_okapi::openapi;
 
 use crate::archive::model::Score;
 use crate::database::score::{all_scores, ScoreSearchParameters};
-use crate::database::{FindResponse, OperationResponse, Pagination};
 use crate::openapi::ApiResult;
 use crate::Config;
+use crate::database::client::{FindResponse, OperationResponse, Pagination};
 
 /// Get all scores from the database with pagination.
 /// The parameters specify the value itself, the fields to search for and the ordering.
