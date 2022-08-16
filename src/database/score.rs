@@ -33,6 +33,17 @@ use crate::database::fuzzy;
 use crate::openapi::{ApiError, ApiResult};
 use crate::Config;
 
+/// Try to fetch all scores from the database.
+/// Not recommended to use with too high `limit`.
+/// 
+/// # Arguments 
+/// 
+/// * `conf`: the application configuration
+/// * `client`: the client to perform the database request with
+/// * `limit`: the limit of the returned rows
+/// * `skip`: how many rows should be skipped
+/// 
+/// returns: Result<Json<Pagination<Score>>, ApiError> 
 pub async fn all_scores(
     conf: &Config,
     client: &Client,
@@ -112,9 +123,9 @@ pub async fn search_scores(
 ///
 /// # Arguments
 ///
-/// * `id`: the id of the document which contains the score
 /// * `conf`: the application configuration
 /// * `client` the client to send the request with
+/// * `id`: the id of the document which contains the score
 ///
 /// returns: Result<Json<Score>, Error>
 pub async fn get_score(conf: &Config, client: &Client, id: String) -> ApiResult<Score> {
@@ -181,10 +192,10 @@ pub async fn put_score<'de>(conf: &Config, client: &Client, mut score: Score) ->
 ///
 /// # Arguments
 ///
-/// * `id`: the id of the score to delete
-/// * `rev`: the revision of the score to delete
 /// * `conf`: the application configuration
 /// * `client`: the client to perform the request
+/// * `id`: the id of the score to delete
+/// * `rev`: the revision of the score to delete
 ///
 /// returns: Result<Json<OperationResponse>, Error>
 pub async fn delete_score(

@@ -30,7 +30,13 @@ use crate::openapi::{ApiError, ApiResult};
 use crate::MemberStateMutex;
 
 /// Get all member without any sensitive data.
-/// Intended for the web representation of all member
+/// Intended for the web representation of all member.
+///
+/// # Arguments
+///
+/// `member_state`: the current state of all members
+///
+/// returns: ApiResult<Crew>
 #[openapi(tag = "Members")]
 #[get("/")]
 pub async fn all_members(member_state: &State<MemberStateMutex>) -> ApiResult<Crew> {
@@ -73,11 +79,14 @@ pub async fn photo(
     )
 }
 
-/// Synchronize all member.
+/// Synchronize all members as soon as possible.
 ///
 /// # Arguments
 ///
-/// * `sync` - a bool which indicates if the synchronization should block this call or not
+/// * `member_state`: the current state of the members to update
+/// * `config`: the application configuration
+///
+/// returns: ApiResult<()>
 #[openapi(tag = "Members")]
 #[post("/synchronize")]
 pub fn synchronize(

@@ -26,6 +26,15 @@ use crate::database::client::request;
 use crate::openapi::ApiResult;
 use crate::Config;
 
+/// Fetch different types of statistics from the database.
+/// 
+/// # Arguments 
+/// 
+/// * `conf`: the application configuration
+/// * `client`: the client to perform the database requests with
+/// * `subject`: the actual type of the statistic
+/// 
+/// returns: Result<Json<Statistic<String, u64>>, ApiError> 
 pub async fn count_statistic(
     conf: &Config,
     client: &Client,
