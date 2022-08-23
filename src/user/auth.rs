@@ -150,8 +150,8 @@ impl<'r> FromRequest<'r> for Member {
 /// A responder for the authentication header and corresponding error.
 pub struct AuthenticationResponder {
     pub(crate) request_token: Option<String>,
-    pub(crate) renewal_token: Option<String>,
     pub(crate) request_token_required: bool,
+    pub(crate) renewal_token_present: bool,
     pub(crate) renewal_token_required: bool,
 }
 
@@ -168,7 +168,7 @@ fn authorization_error() -> ApiError {
 impl<'r> Responder<'r, 'static> for AuthenticationResponder {
     fn respond_to(self, _request: &'r Request<'_>) -> rocket::response::Result<'static> {
         if (self.request_token.is_none() && self.request_token_required)
-            || (self.renewal_token.is_none() && self.renewal_token_required)
+            || (!self.renewal_token_present && self.renewal_token_required)
         {
             let body = serde_json::to_string(&authorization_error()).expect("serialized error");
             return rocket::response::Response::build()
@@ -181,12 +181,6 @@ impl<'r> Responder<'r, 'static> for AuthenticationResponder {
         response_builder.header(ContentType::Text);
         if let Some(token) = self.request_token {
             response_builder.header(Header::new("Authorization", format!("Bearer {}", token)));
-        }
-        if let Some(token) = self.renewal_token {
-            response_builder.header(Header::new(
-                "Authorization-Renewal",
-                format!("Bearer {}", token),
-            ));
         }
         response_builder.ok()
     }
