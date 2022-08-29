@@ -48,7 +48,7 @@ use crate::{Config, MemberStateMutex};
 ///
 /// returns: Result<Json<()>, Error>
 #[openapi(tag = "Self Service")]
-#[get("/login")]
+#[post("/auth")]
 pub async fn login(
     auth: BasicAuth,
     cookies: &CookieJar<'_>,
@@ -111,7 +111,7 @@ pub async fn login(
 ///
 /// returns: Result<AuthenticationResponder, ApiError>
 #[openapi(tag = "Self Service")]
-#[get("/renewal")]
+#[post("/renewal")]
 pub async fn login_with_renewal(
     cookies: &CookieJar<'_>,
     private_key: &State<PrivateKey>,
