@@ -26,18 +26,15 @@ After build some setup if required such as the configuration.
 
 === RSA Keys
 
-Keg uses RSA keys for signing JWTs in the DER format.
+Keg uses RSA keys for signing JWTs in the PEM format.
 The following commands will generate a private key, a public key and an X.509 certificate which is valid for one year.
 
 .Generate the keys and the certificate
 [source,shell script]
 ----
 openssl req -x509 -newkey rsa:4096 -days 365 -utf8 -nodes -outform PEM -keyform PEM -keyout keg-private-key.pem -out keg.crt -sha512
-openssl rsa -in keg-private-key.pem -inform PEM -outform DER -out keg-private-key.der
-openssl rsa -in keg-private-key.der -pubout -inform DER -outform DER -out keg-public-key.der
+openssl rsa -in keg-private-key.pem -inform PEM -outform PEM -out keg-private-key.pem
 ----
-
-TIP: You may want to delete the `keg-private-key.pem` afterwards.
 
 == Configuration
 

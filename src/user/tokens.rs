@@ -63,13 +63,15 @@ pub(crate) fn generate_token(
         ren: renewal,
     };
     debug!("Private key length: {}", &private_key.0.len());
-    jsonwebtoken::encode(
-        &Header::new(Algorithm::RS512),
-        &claims,
-        &EncodingKey::from_rsa_der(&private_key.0),
-    )
-    .map(|encoded| (claims, encoded))
-    .map_err(|e| warn!("Encoding error: {}", e))
+    let encoding_key = &EncodingKey::from_rsa_pem(private_key.0.as_slice()).map_err(|e| {
+        warn!(
+            "Cannot decode private key, authentication will not work: {}",
+            e
+        )
+    })?;
+    jsonwebtoken::encode(&Header::new(Algorithm::RS512), &claims, encoding_key)
+        .map(|encoded| (claims, encoded))
+        .map_err(|e| warn!("Encoding error: {}", e))
 }
 
 /// Function to validate a jwt token.
@@ -98,16 +100,20 @@ pub fn validate_token(
     let mut validation = Validation::default();
     validation.set_required_spec_claims(&["iss", "sub", "ren", "exp"]);
     validation.algorithms = vec![Algorithm::RS512];
-    let claims = jsonwebtoken::decode::<Claims>(
-        token,
-        &DecodingKey::from_rsa_der(&public_key.0),
-        &validation,
-    )
-    .map_err(|e| {
-        info!("Cannot validate token: {}", e);
+    debug!("Public key length: {}", &public_key.0.len());
+    let decoding_key = &DecodingKey::from_rsa_pem(public_key.0.as_slice()).map_err(|e| {
+        warn!(
+            "Cannot decode public key, authentication will not work: {}",
+            e
+        );
         e
-    })?
-    .claims;
+    })?;
+    let claims = jsonwebtoken::decode::<Claims>(token, decoding_key, &validation)
+        .map_err(|e| {
+            info!("Cannot validate token: {}", e);
+            e
+        })?
+        .claims;
     if claims.ren != renewal {
         info!("Tried to use refresh as request token or vice versa");
         return Err(Error::from(ErrorKind::InvalidToken));

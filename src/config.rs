@@ -277,17 +277,17 @@ impl Default for JwtConfig {
 /// These are mostly used for signing and checking jwts.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CertConfig {
-    /// The path to the private key in the der format
+    /// The path to the private key in the pem format
     pub private_key_path: String,
-    /// The path to the public key in the der format
+    /// The path to the public key in the pem format
     pub public_key_path: String,
 }
 
 impl Default for CertConfig {
     fn default() -> Self {
         Self {
-            private_key_path: "keg-private-key.der".to_string(),
-            public_key_path: "keg-public-key.der".to_string(),
+            private_key_path: "keg-private-key.pem".to_string(),
+            public_key_path: "keg-public-key.pem".to_string(),
         }
     }
 }
