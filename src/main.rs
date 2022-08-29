@@ -140,7 +140,7 @@ fn mount_controller_routes(mut rocket: Rocket<Build>) -> Rocket<Build> {
         "/scores" => archive::get_scores_routes_and_docs(&openapi_settings),
         "/books" => archive::get_books_routes_and_docs(&openapi_settings),
         "/statistics" => archive::get_statistics_routes_and_docs(&openapi_settings),
-        "/member" => member::get_routes_and_docs(&openapi_settings),
+        "/members" => member::get_routes_and_docs(&openapi_settings),
         "/users" => user::get_routes_and_docs(&openapi_settings),
     };
     rocket.mount("/", get_info_routes_and_docs(&openapi_settings).0.to_vec())
