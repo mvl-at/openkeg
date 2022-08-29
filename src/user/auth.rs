@@ -157,7 +157,7 @@ pub struct AuthenticationResponder {
 
 /// A generic authentication error used to hide the real issue from the user.
 /// The purpose is to make an attack more difficult than with a more verbose error.
-fn authorization_error() -> ApiError {
+pub(crate) fn authorization_error() -> ApiError {
     ApiError {
         err: "Authentication Failure".to_string(),
         msg: Some("Something went wrong during the authentication either wrong credentials or server errors, due to security reasons no more details are provided.".to_string()),

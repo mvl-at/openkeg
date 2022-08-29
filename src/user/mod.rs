@@ -31,5 +31,8 @@ mod self_service;
 pub mod tokens;
 
 pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
-    openapi_get_routes_spec![settings: self_service::login]
+    openapi_get_routes_spec![
+        settings: self_service::login,
+        self_service::login_with_renewal
+    ]
 }
