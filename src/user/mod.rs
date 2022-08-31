@@ -22,6 +22,8 @@ use rocket_okapi::settings::OpenApiSettings;
 /// The module for the authentication process.
 /// Contains mostly implementations to deserialize structures from request during the authentication process.
 pub mod auth;
+/// Manage all the executives by their roles and manage the deserialization.
+pub mod executives;
 /// The module to manage the private and public keys used to sign and verify JWT signatures.
 pub mod key;
 /// A controller module for endpoints which provides self-service functionality to the user.
