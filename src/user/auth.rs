@@ -15,7 +15,8 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-use crate::openapi::ApiError;
+use std::io::Cursor;
+
 use okapi::map;
 use okapi::openapi3::{
     Object, ParameterValue, RefOr, Response, Responses, SecurityRequirement, SecurityScheme,
@@ -29,9 +30,9 @@ use rocket::Request;
 use rocket_okapi::gen::OpenApiGenerator;
 use rocket_okapi::request::{OpenApiFromRequest, RequestHeaderInput};
 use rocket_okapi::response::OpenApiResponderInner;
-use std::io::Cursor;
 
 use crate::member::model::Member;
+use crate::openapi::ApiError;
 use crate::user::key::PublicKey;
 use crate::user::tokens::validate_token;
 use crate::MemberStateMutex;
@@ -117,11 +118,12 @@ impl<'r> FromRequest<'r> for Member {
             return Forward(());
         }
         let bearer = String::from(auth_header.expect("Authentication header"));
-        if !bearer.starts_with("Bearer ") {
+        let token_optional = bearer.strip_prefix("Bearer ");
+        if token_optional.is_none() {
             debug!("Token does not start with Bearer");
             return Forward(());
         }
-        let token = bearer.replace("Bearer ", "");
+        let token = token_optional.expect("Stripped token");
         let members = request.rocket().state::<MemberStateMutex>();
         if members.is_none() {
             warn!("Unable to retrieve member, requests using authentication will not work");
@@ -134,7 +136,7 @@ impl<'r> FromRequest<'r> for Member {
         }
         let all_members = members.expect("Member read lock").read().await;
         let member = validate_token(
-            &token,
+            token,
             false,
             &all_members.all_members,
             public_key.expect("Public key"),
