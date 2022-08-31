@@ -82,6 +82,8 @@ pub struct LdapConfig {
     pub address_mapping: AddressMapping,
     /// The mapping for the group attributes.
     pub group_mapping: GroupMapping,
+    /// The mapping of the executive roles.
+    pub executive_mapping: ExecutiveMapping,
 }
 
 impl Default for LdapConfig {
@@ -104,6 +106,7 @@ impl Default for LdapConfig {
             member_mapping: Default::default(),
             address_mapping: Default::default(),
             group_mapping: Default::default(),
+            executive_mapping: Default::default(),
         }
     }
 }
@@ -225,14 +228,14 @@ impl Default for AddressMapping {
 /// The attribute descriptions refer to the content of the object attribute and provide an example often seen for the mapping.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GroupMapping {
-    /// The singular name of this group.
-    /// This may be a register name such as 'Flügelhorn' or another member group such as 'Sutler' or 'Honorary'.
-    /// Normally 'cn'.
-    pub name: String,
     /// The plural name of this group.
     /// This may be a register name such as 'Flügelhörner' or another member group such as 'Sutlers' or 'Honoraries'.
-    /// Something like 'cns'.
+    /// Something like 'cn'.
     pub name_plural: String,
+    /// The singular name of this group.
+    /// This may be a register name such as 'Flügelhorn' or another member group such as 'Sutler' or 'Honorary'.
+    /// Normally 'cns'.
+    pub name: String,
     /// The description of this group.
     /// Normally 'description'.
     pub description: String,
@@ -244,10 +247,25 @@ pub struct GroupMapping {
 impl Default for GroupMapping {
     fn default() -> Self {
         Self {
-            name: "cn".to_string(),
-            name_plural: "cns".to_string(),
+            name_plural: "cn".to_string(),
+            name: "cns".to_string(),
             description: "description".to_string(),
             members: "member".to_string(),
+        }
+    }
+}
+
+/// The mapping of all the executive roles.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ExecutiveMapping {
+    /// Role to manage the archive, both reading and writing.
+    pub archive: String,
+}
+
+impl Default for ExecutiveMapping {
+    fn default() -> Self {
+        Self {
+            archive: "".to_string(),
         }
     }
 }
