@@ -39,3 +39,6 @@ arrangers_statistic = "/archive/_design/score/_view/arrangers-count"
 publishers_statistic = "/archive/_design/score/_view/publishers-count"
 books_statistic = "/archive/_design/score/_view/books-count"
 locations_statistic = "/archive/_design/score/_view/locations-count"
+
+[default.ldap.executive_mapping]
+archive = "Archivare"
