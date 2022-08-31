@@ -16,7 +16,8 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 use okapi::openapi3::{Object, SecurityRequirement, SecurityScheme, SecuritySchemeData};
-use rocket::outcome::Outcome::{Forward, Success};
+use rocket::http::Status;
+use rocket::outcome::Outcome::{Failure, Success};
 use rocket::request::{FromRequest, Outcome};
 use rocket::Request;
 use rocket_okapi::gen::OpenApiGenerator;
@@ -82,11 +83,11 @@ where
                 Success(ExecutiveRole(G::default()))
             } else {
                 warn!("Member '{}' is not member of the '{}' executive role or the group does not exist on the directory server", member.full_username, group_name);
-                Forward(())
+                Failure((Status::Forbidden, ()))
             }
         } else {
             debug!("Request does not contain a member");
-            Forward(())
+            Failure((Status::Unauthorized, ()))
         }
     }
 }
