@@ -23,6 +23,7 @@ use rocket_okapi::{openapi, JsonSchema};
 use crate::archive::model::CountStatistic;
 use crate::database::statistic::count_statistic;
 use crate::openapi::ApiResult;
+use crate::user::executives::{Archive, ExecutiveRole};
 use crate::Config;
 
 /// Representation of a score field which can be used in a search.
@@ -37,18 +38,20 @@ pub enum CountStatisticType {
 }
 
 /// Fetch the statistic for various items such as genres with their count.
-/// 
+///
 /// # Arguments
-/// 
-/// `subject`: the type of the statistic to fetch
-/// `conf`: the application configuration
-/// `client`: the client to perform database requests with
-/// 
-/// returns: ApiResult<CountStatistic> 
+///
+/// * `subject`: the type of the statistic to fetch
+/// * `_archive_role`: the archive role guard
+/// * `conf`: the application configuration
+/// * `client`: the client to perform database requests with
+///
+/// returns: ApiResult<CountStatistic>
 #[openapi(tag = "Archive")]
 #[get("/counts?<subject>")]
 pub async fn get_count_statistic(
     subject: CountStatisticType,
+    _archive_role: ExecutiveRole<Archive>,
     conf: &State<Config>,
     client: &State<Client>,
 ) -> ApiResult<CountStatistic> {
