@@ -28,7 +28,7 @@ pub mod photo;
 /// Module which provides state structs to the application for members.
 pub mod state;
 
-#[cfg(feature = "debug")]
+#[cfg(debug_assertions)]
 pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
     openapi_get_routes_spec![
         settings: controller::all_members,
@@ -38,7 +38,7 @@ pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, O
     ]
 }
 
-#[cfg(not(feature = "debug"))]
+#[cfg(not(debug_assertions))]
 pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
     openapi_get_routes_spec![
         settings: controller::all_members,
