@@ -22,6 +22,8 @@ use rocket_okapi::settings::OpenApiSettings;
 /// The module for the authentication process.
 /// Contains mostly implementations to deserialize structures from request during the authentication process.
 pub mod auth;
+/// Manage all the executives by their roles and manage the deserialization.
+pub mod executives;
 /// The module to manage the private and public keys used to sign and verify JWT signatures.
 pub mod key;
 /// A controller module for endpoints which provides self-service functionality to the user.
@@ -31,5 +33,8 @@ mod self_service;
 pub mod tokens;
 
 pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
-    openapi_get_routes_spec![settings: self_service::login]
+    openapi_get_routes_spec![
+        settings: self_service::login,
+        self_service::login_with_renewal
+    ]
 }

@@ -22,6 +22,7 @@ use rocket_okapi::openapi;
 use crate::archive::model::Score;
 use crate::database::client::FindResponse;
 use crate::openapi::ApiResult;
+use crate::user::executives::{Archive, ExecutiveRole};
 use crate::Config;
 
 /// Fetch all scores which are part of the given `book`.
@@ -43,6 +44,7 @@ use crate::Config;
 pub async fn get_book_content(
     name: String,
     conf: &State<Config>,
+    _archive_role: ExecutiveRole<Archive>,
     client: &State<Client>,
 ) -> ApiResult<FindResponse<Score>> {
     crate::database::score::get_book_content(conf, client, name).await

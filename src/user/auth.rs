@@ -15,7 +15,8 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-use crate::openapi::ApiError;
+use std::io::Cursor;
+
 use okapi::map;
 use okapi::openapi3::{
     Object, ParameterValue, RefOr, Response, Responses, SecurityRequirement, SecurityScheme,
@@ -29,9 +30,9 @@ use rocket::Request;
 use rocket_okapi::gen::OpenApiGenerator;
 use rocket_okapi::request::{OpenApiFromRequest, RequestHeaderInput};
 use rocket_okapi::response::OpenApiResponderInner;
-use std::io::Cursor;
 
 use crate::member::model::Member;
+use crate::openapi::ApiError;
 use crate::user::key::PublicKey;
 use crate::user::tokens::validate_token;
 use crate::MemberStateMutex;
@@ -117,11 +118,12 @@ impl<'r> FromRequest<'r> for Member {
             return Forward(());
         }
         let bearer = String::from(auth_header.expect("Authentication header"));
-        if !bearer.starts_with("Bearer ") {
+        let token_optional = bearer.strip_prefix("Bearer ");
+        if token_optional.is_none() {
             debug!("Token does not start with Bearer");
             return Forward(());
         }
-        let token = bearer.replace("Bearer ", "");
+        let token = token_optional.expect("Stripped token");
         let members = request.rocket().state::<MemberStateMutex>();
         if members.is_none() {
             warn!("Unable to retrieve member, requests using authentication will not work");
@@ -134,7 +136,7 @@ impl<'r> FromRequest<'r> for Member {
         }
         let all_members = members.expect("Member read lock").read().await;
         let member = validate_token(
-            &token,
+            token,
             false,
             &all_members.all_members,
             public_key.expect("Public key"),
@@ -150,14 +152,14 @@ impl<'r> FromRequest<'r> for Member {
 /// A responder for the authentication header and corresponding error.
 pub struct AuthenticationResponder {
     pub(crate) request_token: Option<String>,
-    pub(crate) renewal_token: Option<String>,
     pub(crate) request_token_required: bool,
+    pub(crate) renewal_token_present: bool,
     pub(crate) renewal_token_required: bool,
 }
 
 /// A generic authentication error used to hide the real issue from the user.
 /// The purpose is to make an attack more difficult than with a more verbose error.
-fn authorization_error() -> ApiError {
+pub(crate) fn authorization_error() -> ApiError {
     ApiError {
         err: "Authentication Failure".to_string(),
         msg: Some("Something went wrong during the authentication either wrong credentials or server errors, due to security reasons no more details are provided.".to_string()),
@@ -168,7 +170,7 @@ fn authorization_error() -> ApiError {
 impl<'r> Responder<'r, 'static> for AuthenticationResponder {
     fn respond_to(self, _request: &'r Request<'_>) -> rocket::response::Result<'static> {
         if (self.request_token.is_none() && self.request_token_required)
-            || (self.renewal_token.is_none() && self.renewal_token_required)
+            || (!self.renewal_token_present && self.renewal_token_required)
         {
             let body = serde_json::to_string(&authorization_error()).expect("serialized error");
             return rocket::response::Response::build()
@@ -181,12 +183,6 @@ impl<'r> Responder<'r, 'static> for AuthenticationResponder {
         response_builder.header(ContentType::Text);
         if let Some(token) = self.request_token {
             response_builder.header(Header::new("Authorization", format!("Bearer {}", token)));
-        }
-        if let Some(token) = self.renewal_token {
-            response_builder.header(Header::new(
-                "Authorization-Renewal",
-                format!("Bearer {}", token),
-            ));
         }
         response_builder.ok()
     }
