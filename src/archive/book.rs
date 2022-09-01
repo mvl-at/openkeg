@@ -36,6 +36,7 @@ use crate::Config;
 ///
 /// * `name`: the name of the book to fetch
 /// * `conf`: the application configuration
+/// * `_archive_role`: the archive role guard
 /// * `client`: the client to send the database requests with
 ///
 /// returns: Result<Json<FindResponse<Score>>, Error>

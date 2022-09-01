@@ -32,10 +32,11 @@ use crate::Config;
 ///
 /// # Arguments
 ///
-/// `limit`: the maximum amount of returned rows
-/// `skip`: how many scores should be skipped
-/// `conf`: the application configuration
-/// `client`: the client to perform the database requests with
+/// * `limit`: the maximum amount of returned rows
+/// * `skip`: how many scores should be skipped
+/// * `_archive_role`: the archive role guard
+/// * `conf`: the application configuration
+/// * `client`: the client to perform the database requests with
 ///
 /// returns: ApiResult<Pagination<Score>>
 #[openapi(tag = "Archive")]
@@ -64,6 +65,7 @@ pub async fn get_scores(
 /// # Arguments
 ///
 /// * `parameters`: the parameters to perform the search
+/// * `_archive_role`: the archive role guard
 /// * `conf`: the application configuration
 /// * `client`: the http client to perform the database query
 ///
@@ -84,6 +86,7 @@ pub async fn search_scores(
 /// # Arguments
 ///
 /// * `id`: the id of the document which contains the score
+/// * `_archive_role`: the archive role guard
 /// * `conf`: the application configuration
 /// * `client` the client to send the request with
 ///
@@ -106,6 +109,7 @@ pub async fn get_score(
 /// # Arguments
 ///
 /// * `score`: the score to insert
+/// * `_archive_role`: the archive role guard
 /// * `conf`: the application configuration
 /// * `client`: the client to perform the request with
 #[openapi(tag = "Archive")]
@@ -125,6 +129,7 @@ pub async fn put_score(
 ///
 /// * `id`: the id of the score to delete
 /// * `rev`: the revision of the score to delete
+/// * `_archive_role`: the archive role guard
 /// * `conf`: the application configuration
 /// * `client`: the client to perform the request
 ///

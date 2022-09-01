@@ -41,9 +41,10 @@ pub enum CountStatisticType {
 ///
 /// # Arguments
 ///
-/// `subject`: the type of the statistic to fetch
-/// `conf`: the application configuration
-/// `client`: the client to perform database requests with
+/// * `subject`: the type of the statistic to fetch
+/// * `_archive_role`: the archive role guard
+/// * `conf`: the application configuration
+/// * `client`: the client to perform database requests with
 ///
 /// returns: ApiResult<CountStatistic>
 #[openapi(tag = "Archive")]
