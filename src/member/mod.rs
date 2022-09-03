@@ -34,7 +34,7 @@ pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, O
         settings: controller::all_members,
         controller::photo,
         controller::synchronize,
-        controller::list,
+        controller::list_members,
     ]
 }
 

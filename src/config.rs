@@ -42,6 +42,8 @@ pub struct Config {
     pub static_directory_path: String,
     /// The URL where to mount the public directory.
     pub static_directory_url: String,
+    /// The configuration for the document server.
+    pub document_server: DocumentServer,
 }
 
 /// The configuration of the directory server.
@@ -382,6 +384,43 @@ impl Default for DatabaseMapping {
             publishers_statistic: "".to_string(),
             books_statistic: "".to_string(),
             locations_statistic: "".to_string(),
+        }
+    }
+}
+
+/// Configuration of the document server which provides all the documents for access.
+/// The server must implement the WebDav specification.
+/// In the context of a music society, this is typically a nextcloud instance.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DocumentServer {
+    /// The root of all documents.
+    /// Must be a full qualified HTTP URL to the WebDav instance.
+    /// May already contain directories.
+    pub base_url: String,
+    /// The mappings of the document types to server directories.
+    pub mapping: DocumentMapping,
+}
+
+impl Default for DocumentServer {
+    fn default() -> Self {
+        Self {
+            base_url: "".to_string(),
+            mapping: Default::default()
+        }
+    }
+}
+
+/// The mappings for the document types.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DocumentMapping {
+    /// The URL to the blackboard documents directory.
+    pub blackboard: String,
+}
+
+impl Default for DocumentMapping {
+    fn default() -> Self {
+        Self {
+            blackboard: "".to_string(),
         }
     }
 }
