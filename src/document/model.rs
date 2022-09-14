@@ -20,6 +20,7 @@ use std::default::Default;
 
 use okapi::openapi3::RefOr;
 use okapi::openapi3::{Parameter, ParameterValue, Responses};
+use rocket::fs::NamedFile;
 use rocket::http::MediaType;
 use rocket::request::FromParam;
 use rocket::response::Responder;
@@ -117,7 +118,7 @@ impl OpenApiFromParam<'_> for DocumentType {
 
 #[derive(Responder)]
 #[response(status = 200, content_type = "text/markdown")]
-pub struct MarkdownContent(pub String);
+pub struct MarkdownContent(pub NamedFile);
 
 //todo: find a less verbose way to propagate text/markdown to openapi
 impl OpenApiResponderInner for MarkdownContent {
