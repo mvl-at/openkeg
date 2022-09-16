@@ -76,21 +76,14 @@ pub async fn get_document(
     conf: &State<Config>,
 ) -> Result<MarkdownContent, ApiError> {
     let doc_type_path_str = doc_type.location(&conf.document_server.mapping);
-    let doc_type_path = Path::new(&doc_type_path_str)
-        .canonicalize()
-        .map_err(|e| ApiError {
-            err: e.kind().to_string(),
-            msg: Some(e.to_string()),
-            http_status_code: Status::InternalServerError.code,
-        })?;
-    let path = doc_type_path
-        .join(document)
-        .canonicalize()
-        .map_err(|e| ApiError {
-            err: e.kind().to_string(),
-            msg: Some(e.to_string()),
-            http_status_code: Status::UnprocessableEntity.code,
-        })?;
+    let doc_type_path = map_io_err(
+        Path::new(&doc_type_path_str).canonicalize(),
+        Status::InternalServerError,
+    )?;
+    let path = map_io_err(
+        doc_type_path.join(document).canonicalize(),
+        Status::UnprocessableEntity,
+    )?;
     if !path.as_path().starts_with(doc_type_path) {
         return Err(ApiError {
             err: "Not Found".to_string(),
@@ -98,11 +91,7 @@ pub async fn get_document(
             http_status_code: Status::NotFound.code,
         });
     }
-    let doc = NamedFile::open(path).await.map_err(|e| ApiError {
-        err: e.kind().to_string(),
-        msg: Some(e.to_string()),
-        http_status_code: Status::NotFound.code,
-    })?;
+    let doc = map_io_err(NamedFile::open(path).await, Status::NotFound)?;
     Ok(MarkdownContent(doc))
 }
 
