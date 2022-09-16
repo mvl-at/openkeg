@@ -19,16 +19,43 @@ use std::path::Path;
 
 use rocket::fs::NamedFile;
 use rocket::http::Status;
+use rocket::serde::json::Json;
 use rocket::State;
 use rocket_okapi::openapi;
 
 use crate::document::model::{DocumentType, MarkdownContent};
-use crate::openapi::ApiError;
+use crate::openapi::{map_io_err, ApiError, ApiResult};
 use crate::Config;
 
+/// List all documents of the provided [`DocumentType`] which are available on the server sorted by their filename.
+/// The list only includes files directly located at the configured directory of the document type.
+/// This means there is no support for recursive lookups nor directories.
+///
+/// # Arguments
+///
+/// * `doc_type`: the document type of all the listed documents
+/// * `conf`: the application configuration
+///
+/// returns: Result<Json<Vec<String, Global>>, ApiError>
 #[openapi(tag = "Documents")]
 #[get("/<doc_type>")]
-pub async fn list_documents(doc_type: DocumentType, conf: &State<Config>) {}
+pub async fn list_documents(
+    doc_type: DocumentType,
+    conf: &State<Config>,
+) -> ApiResult<Vec<String>> {
+    let doc_type_path_str = doc_type.location(&conf.document_server.mapping);
+    let doc_type_path = map_io_err(
+        Path::new(&doc_type_path_str).canonicalize(),
+        Status::InternalServerError,
+    )?;
+    let read_dir = map_io_err(doc_type_path.read_dir(), Status::InternalServerError)?;
+    let files = read_dir.flatten().filter(|f| f.path().is_file());
+    let mut files_names: Vec<String> = files
+        .flat_map(|f| f.file_name().to_str().map(|s| s.to_string()))
+        .collect();
+    files_names.sort();
+    Ok(Json(files_names))
+}
 
 /// Read a document located on the servers file system.
 /// Each document has a [DocumentType] with a corresponding base url.
