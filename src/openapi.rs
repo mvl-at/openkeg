@@ -16,6 +16,8 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 use std::collections::HashMap;
+use std::error::Error;
+use std::io;
 use std::result::Result as StdResult;
 
 use okapi::openapi3::OpenApi;
@@ -125,18 +127,36 @@ impl std::fmt::Display for ApiError {
     }
 }
 
-impl std::error::Error for ApiError {}
+impl Error for ApiError {}
 
 impl<'r> Responder<'r, 'static> for ApiError {
     fn respond_to(self, _: &'r Request<'_>) -> response::Result<'static> {
         // Convert object to json
         let body = serde_json::to_string(&self).expect("Error body");
         Response::build()
-            .sized_body(body.len(), std::io::Cursor::new(body))
+            .sized_body(body.len(), io::Cursor::new(body))
             .header(ContentType::JSON)
             .status(Status::new(self.http_status_code))
             .ok()
     }
+}
+
+/// Map an [`Error`] with a [`Status`] from the [`std::io`] to an [`ApiError`].
+/// Since the error type of the module is private, only the [`io::Result`] can be converted.
+/// The message and the error kind will be taken from the io error.
+///
+/// # Arguments
+///
+/// * `result`: the io result which contains the [`Error`] to map
+/// * `status`: the status to use for the mapped [`ApiError`]
+///
+/// returns: Result<T, ApiError>
+pub fn map_io_err<T>(result: io::Result<T>, status: Status) -> Result<T, ApiError> {
+    result.map_err(|e| ApiError {
+        err: e.to_string(),
+        msg: Some(e.kind().to_string()),
+        http_status_code: status.code,
+    })
 }
 
 impl From<rocket::serde::json::Error<'_>> for ApiError {

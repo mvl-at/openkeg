@@ -19,30 +19,15 @@ use okapi::openapi3::OpenApi;
 use rocket_okapi::openapi_get_routes_spec;
 use rocket_okapi::settings::OpenApiSettings;
 
-/// Module which handles all the rest endpoints regarding members.
-pub mod controller;
-/// Module which holds the model regarding members and groups.
-pub mod model;
-/// Module which handles all the rest endpoints regarding the member photo.
-pub mod photo;
-/// Module which provides state structs to the application for members.
-pub mod state;
+/// Submodule for the traits and structures used in this module.
+mod model;
+/// Provide the rest interface for accessing documents.
+mod service;
 
-#[cfg(debug_assertions)]
-pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
+pub fn get_document_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
     openapi_get_routes_spec![
-        settings: controller::all_members,
-        controller::photo,
-        controller::synchronize,
-        controller::list_members,
-    ]
-}
-
-#[cfg(not(debug_assertions))]
-pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
-    openapi_get_routes_spec![
-        settings: controller::all_members,
-        controller::photo,
-        controller::synchronize,
+        settings: service::list_documents,
+        service::get_document,
+        service::get_asset
     ]
 }

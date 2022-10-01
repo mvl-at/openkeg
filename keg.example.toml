@@ -42,3 +42,7 @@ locations_statistic = "/archive/_design/score/_view/locations-count"
 
 [default.ldap.executive_mapping]
 archive = "Archivare"
+
+[default.document_server.mapping]
+blackboard = "blackboard"
+blackboard_assets = "blackboard/Bilder"

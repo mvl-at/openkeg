@@ -54,6 +54,16 @@ NOTE: Due to unknown reasons it is currently not possible to override the defaul
 include::keg.example.toml[]
 ----
 
+=== Markdown Documents
+
+Markdown documents can be served as document types.
+A typical use-case for this to let the API expose documents from another service such as link:https://nextcloud.com/[Nextcloud].
+To use it, the different document type mappings must be configured below the working directory of the server.
+This may not seem very convenient at the first glance when using a directory from another service, but there are options to evade this limitation depending on your setup:
+
+* use a symlink, the simplest and recommended option
+* mount rebind, useful when an advanced setup is required
+
 == Development
 
 In order to use the pre-commit hook for formatting the code before every commit, just run `make` in the project root once.
