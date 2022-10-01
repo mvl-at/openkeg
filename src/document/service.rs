@@ -51,7 +51,7 @@ pub async fn list_documents(
     let read_dir = map_io_err(doc_type_path.read_dir(), Status::InternalServerError)?;
     let files = read_dir.flatten().filter(|f| f.path().is_file());
     let mut files_names: Vec<String> = files
-        .flat_map(|f| f.file_name().to_str().map(|s| s.to_string()))
+        .flat_map(|f| f.file_name().to_str().map(ToString::to_string))
         .collect();
     files_names.sort();
     Ok(Json(files_names))
@@ -64,7 +64,7 @@ pub async fn list_documents(
 /// # Arguments
 ///
 /// * `doc_type`: the document type to look for
-/// * `document`: the file name of the requested document
+/// * `document`: the filename of the requested document
 /// * `conf`: the application configuration
 ///
 /// returns: Result<MarkdownContent, ApiError>
@@ -76,31 +76,62 @@ pub async fn get_document(
     conf: &State<Config>,
 ) -> Result<MarkdownContent, ApiError> {
     let doc_type_path_str = doc_type.location(&conf.document_server.mapping);
-    let doc_type_path = map_io_err(
-        Path::new(&doc_type_path_str).canonicalize(),
+    let doc = read_from_filesystem(document, doc_type_path_str).await?;
+    Ok(MarkdownContent(doc))
+}
+
+/// Read a document-asset located on the servers file system.
+/// Each document has a [DocumentType] with a corresponding base url.
+/// If the requested asset name is not below the assets location of the [DocumentType], the server will return a 'Not Found'.
+///
+/// # Arguments
+///
+/// * `doc_type`: the document type to look for
+/// * `asset`: the filename of the requested asset
+/// * `conf`: the application configuration
+///
+/// returns: Result<NamedFile, ApiError>
+#[openapi(tag = "Documents")]
+#[get("/<doc_type>/assets/<asset>")]
+pub async fn get_asset(
+    doc_type: DocumentType,
+    asset: String,
+    conf: &State<Config>,
+) -> Result<NamedFile, ApiError> {
+    let assets_path_str = doc_type.assets_location(&conf.document_server.mapping);
+    let asset_file = read_from_filesystem(asset, assets_path_str).await?;
+    Ok(asset_file)
+}
+
+/// Read a file from the filesystem in the context of a web request.
+/// This function is intended to sanitize the input from the request:
+///
+/// * canonicalization to check whether the file is below the directory
+/// * ensure to access no other directories than the specified one
+/// * obfuscate error codes from the filesystem to not provide further information to potential attackers
+///
+///
+/// # Arguments
+///
+/// * `filename`: the filename below the directory to request
+/// * `directory`: the directory which should contain the file
+///
+/// returns: Result<NamedFile, ApiError>
+async fn read_from_filesystem(filename: String, directory: String) -> Result<NamedFile, ApiError> {
+    let directory_path = map_io_err(
+        Path::new(&directory).canonicalize(),
         Status::InternalServerError,
     )?;
-    let path = map_io_err(
-        doc_type_path.join(document).canonicalize(),
-        Status::UnprocessableEntity,
+    let file_path = map_io_err(
+        directory_path.join(filename).canonicalize(),
+        Status::NotFound,
     )?;
-    if !path.as_path().starts_with(doc_type_path) {
+    if !file_path.as_path().starts_with(directory_path) {
         return Err(ApiError {
             err: "Not Found".to_string(),
             msg: Some("File or directory not found".to_string()),
             http_status_code: Status::NotFound.code,
         });
     }
-    let doc = map_io_err(NamedFile::open(path).await, Status::NotFound)?;
-    Ok(MarkdownContent(doc))
-}
-
-#[openapi(tag = "Documents")]
-#[get("/<doc_type>/<document>/assets/<asset>")]
-pub async fn get_asset(
-    doc_type: DocumentType,
-    document: String,
-    asset: String,
-    conf: &State<Config>,
-) {
+    map_io_err(NamedFile::open(file_path).await, Status::NotFound)
 }
