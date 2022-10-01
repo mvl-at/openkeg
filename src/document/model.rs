@@ -15,16 +15,15 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-use okapi::map;
 use std::default::Default;
 
+use okapi::map;
 use okapi::openapi3::RefOr;
 use okapi::openapi3::{Parameter, ParameterValue, Responses};
 use rocket::fs::NamedFile;
 use rocket::http::MediaType;
 use rocket::request::FromParam;
 use rocket::response::Responder;
-
 use rocket_okapi::gen::OpenApiGenerator;
 use rocket_okapi::request::OpenApiFromParam;
 use rocket_okapi::response::OpenApiResponderInner;
@@ -50,10 +49,24 @@ impl DocumentType {
     ///
     /// * `mapping`: the mapping from the configuration
     ///
-    /// returns: &String
+    /// returns: String
     pub fn location(&self, mapping: &DocumentMapping) -> String {
         match self {
             DocumentType::Blackboard => mapping.blackboard.clone(),
+        }
+    }
+
+    /// Get the location to the assets directory where all the document-assets of this type are stored at.
+    /// The returned path is relative to the document server.
+    ///
+    /// # Arguments
+    ///
+    /// * `mapping`: the mapping from the configuration
+    ///
+    /// returns: String
+    pub fn assets_location(&self, mapping: &DocumentMapping) -> String {
+        match self {
+            DocumentType::Blackboard => mapping.blackboard_assets.clone(),
         }
     }
 }
