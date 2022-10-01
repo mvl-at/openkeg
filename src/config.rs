@@ -405,7 +405,7 @@ impl Default for DocumentServer {
     fn default() -> Self {
         Self {
             base_url: "".to_string(),
-            mapping: Default::default()
+            mapping: Default::default(),
         }
     }
 }
@@ -415,12 +415,15 @@ impl Default for DocumentServer {
 pub struct DocumentMapping {
     /// The URL to the blackboard documents directory.
     pub blackboard: String,
+    /// The URL to the blackboard assets directory.
+    pub blackboard_assets: String,
 }
 
 impl Default for DocumentMapping {
     fn default() -> Self {
         Self {
             blackboard: "".to_string(),
+            blackboard_assets: "".to_string(),
         }
     }
 }
