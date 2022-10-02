@@ -41,7 +41,7 @@ use crate::MemberStateMutex;
 #[get("/")]
 pub async fn all_members(member_state: &State<MemberStateMutex>) -> ApiResult<Crew> {
     let members = member_state.read().await;
-    let member_mapper: &dyn Fn(&Member) -> WebMember = &|m| WebMember::from_member(m, true);
+    let member_mapper: &dyn Fn(&Member) -> WebMember = &|m| WebMember::from_member(m, false);
     Ok(Json(Crew::new(
         &members.members_by_register,
         &members.sutlers,
