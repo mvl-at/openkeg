@@ -16,12 +16,14 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 use rocket::http::{Cookie, CookieJar};
+use rocket::serde::json::Json;
 use rocket::time::OffsetDateTime;
 use rocket::State;
 use rocket_okapi::openapi;
 
 use crate::auth::authenticate;
-use crate::openapi::ApiError;
+use crate::member::model::{Member, WebMember};
+use crate::openapi::{ApiError, ApiResult};
 use crate::user::auth::{authorization_error, AuthenticationResponder, BasicAuth};
 use crate::user::key::{PrivateKey, PublicKey};
 use crate::user::tokens::{generate_token, validate_token, Claims};
@@ -159,6 +161,20 @@ pub async fn login_with_renewal(
 #[options("/renewal")]
 pub async fn login_with_renewal_options() {
     debug!("Option request on /renewal, possibly a CORS preflight")
+}
+
+/// Get the information of the currently logged in member.
+/// This also includes sensitive data such as the address.
+///
+/// # Arguments
+///
+/// * `member`: the member guard which must be logged in
+///
+/// returns: Result<Json<WebMember>, ApiError>
+#[openapi(tag = "Self Service")]
+#[get("/self")]
+pub async fn info(member: Member) -> ApiResult<WebMember> {
+    Ok(Json(WebMember::from_member(&member, true)))
 }
 
 /// Attach the renewal token to the `Renewal` cookie.
