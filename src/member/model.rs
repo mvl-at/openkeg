@@ -300,11 +300,14 @@ pub struct Address {
     pub country_code: String,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(crate = "rocket::serde", rename_all = "camelCase")]
+#[schemars(example = "Self::example")]
 pub struct Group {
     pub name: String,
     pub name_plural: String,
     pub description: String,
+    #[serde(skip)]
     pub members: Vec<String>,
 }
 
@@ -425,6 +428,17 @@ impl PartialOrd<Self> for Group {
 impl Ord for Group {
     fn cmp(&self, other: &Self) -> Ordering {
         self.name.cmp(&other.name)
+    }
+}
+
+impl SchemaExample for Group {
+    fn example() -> Self {
+        Self {
+            name: "root".to_string(),
+            name_plural: "root".to_string(),
+            description: "master of everything".to_string(),
+            members: vec![],
+        }
     }
 }
 

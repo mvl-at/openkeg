@@ -15,6 +15,7 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+use rocket::form::validate::Contains;
 use rocket::http::{Cookie, CookieJar};
 use rocket::serde::json::Json;
 use rocket::time::OffsetDateTime;
@@ -22,7 +23,7 @@ use rocket::State;
 use rocket_okapi::openapi;
 
 use crate::auth::authenticate;
-use crate::member::model::{Member, WebMember};
+use crate::member::model::{Group, Member, WebMember};
 use crate::openapi::{ApiError, ApiResult};
 use crate::user::auth::{authorization_error, AuthenticationResponder, BasicAuth};
 use crate::user::key::{PrivateKey, PublicKey};
@@ -175,6 +176,30 @@ pub async fn login_with_renewal_options() {
 #[get("/self")]
 pub async fn info(member: Member) -> ApiResult<WebMember> {
     Ok(Json(WebMember::from_member(&member, true)))
+}
+
+/// Get all executive roles of the currently logged-in user.
+/// Executive roles are roles which are allowed to perform actions which are forbidden for normal users.
+///
+/// # Arguments
+///
+/// * `member_state`: the member state
+/// * `member`: the logged-in member to get the roles from
+///
+/// returns: Result<Json<Vec<Group, Global>>, ApiError>
+#[openapi(tag = "Self Service")]
+#[get("/executives")]
+pub async fn executive_roles(
+    member_state: &State<MemberStateMutex>,
+    member: Member,
+) -> ApiResult<Vec<Group>> {
+    let members = member_state.read().await;
+    let groups = members
+        .executives
+        .iter()
+        .filter(|e| e.members.contains(member.full_username.clone()))
+        .cloned();
+    Ok(Json(groups.collect()))
 }
 
 /// Attach the renewal token to the `Renewal` cookie.
