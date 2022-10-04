@@ -33,7 +33,9 @@ use rocket_okapi::response::OpenApiResponderInner;
 
 use crate::member::model::Member;
 use crate::openapi::ApiError;
-use crate::user::tokens::{member_from_claims, Claims};
+use crate::user::tokens::{
+    member_from_claims, Claims, AUTHORIZATION_HEADER, AUTHORIZATION_RENEWAL_HEADER,
+};
 use crate::MemberStateMutex;
 
 /// The basic auth structure as used in the HTTP protocol.
@@ -50,7 +52,7 @@ impl<'r> FromRequest<'r> for BasicAuth {
     type Error = ();
 
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        let authorization_option = request.headers().get_one("Authorization");
+        let authorization_option = request.headers().get_one(AUTHORIZATION_HEADER);
         if authorization_option.is_none() {
             debug!("Skip credentials");
             return Forward(());
@@ -196,11 +198,14 @@ impl<'r> Responder<'r, 'static> for AuthenticationResponder {
         let mut response_builder = rocket::response::Response::build();
         response_builder.header(ContentType::Text);
         if let Some(token) = self.request_token {
-            response_builder.header(Header::new("Authorization", format!("Bearer {}", token)));
+            response_builder.header(Header::new(
+                AUTHORIZATION_HEADER,
+                format!("Bearer {}", token),
+            ));
         }
         if let Some(token) = self.renewal_token {
             response_builder.header(Header::new(
-                "X-Authorization-Renewal",
+                AUTHORIZATION_RENEWAL_HEADER,
                 format!("Bearer {}", token),
             ));
         }
@@ -211,14 +216,14 @@ impl<'r> Responder<'r, 'static> for AuthenticationResponder {
 impl OpenApiResponderInner for AuthenticationResponder {
     fn responses(_gen: &mut OpenApiGenerator) -> rocket_okapi::Result<Responses> {
         use okapi::openapi3::Header;
-        let auth_headers = map! {"Authorization".to_string() => RefOr::Object(Header{
+        let auth_headers = map! {AUTHORIZATION_HEADER.to_string() => RefOr::Object(Header{
             description: Some("The request token, prefixed with 'Bearer '".to_string()),
             required: false,
             deprecated: false,
             allow_empty_value: false,
             value: ParameterValue::Content {content: map!{}},
             extensions: map! {}
-        }),"X-Authorization-Renewal".to_string() => RefOr::Object(Header{
+        }),AUTHORIZATION_RENEWAL_HEADER.to_string() => RefOr::Object(Header{
             description: Some("The renewal token, prefixed with 'Bearer '".to_string()),
             required: false,
             deprecated: false,

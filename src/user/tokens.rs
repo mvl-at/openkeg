@@ -32,6 +32,9 @@ use crate::user::auth::bearer_documentation;
 use crate::user::key::{PrivateKey, PublicKey};
 use crate::Config;
 
+pub const AUTHORIZATION_HEADER: &str = "authorization";
+pub const AUTHORIZATION_RENEWAL_HEADER: &str = "x-authorization-renewal";
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     pub(crate) sub: String,
