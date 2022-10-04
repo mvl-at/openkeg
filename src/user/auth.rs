@@ -149,6 +149,36 @@ impl<'r> FromRequest<'r> for Member {
     }
 }
 
+impl<'r> OpenApiFromRequest<'r> for Member {
+    fn from_request_input(
+        _gen: &mut OpenApiGenerator,
+        _name: String,
+        _required: bool,
+    ) -> rocket_okapi::Result<RequestHeaderInput> {
+        bearer_documentation()
+    }
+}
+
+/// Generate the OpenAPI documentation for the bearer token requirement.
+/// This function should be used in order to expose only a single field to the documentation to set the bearer token.
+pub fn bearer_documentation() -> rocket_okapi::Result<RequestHeaderInput> {
+    let mut security_req = SecurityRequirement::new();
+    // Each security requirement needs to be met before access is allowed.
+    security_req.insert("bearer token".to_owned(), Vec::new());
+    Ok(RequestHeaderInput::Security(
+        "bearer token".to_string(),
+        SecurityScheme {
+            description: Some("Required for requests which need authorization by a bearer token. Log in first to retrieve it".to_string()),
+            data: SecuritySchemeData::Http {
+                scheme: "bearer".to_string(),
+                bearer_format: Some("JWT".to_string()),
+            },
+            extensions: Object::default(),
+        },
+        security_req,
+    ))
+}
+
 /// A responder for the authentication header and corresponding error.
 pub struct AuthenticationResponder {
     pub(crate) request_token: Option<String>,

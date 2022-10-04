@@ -87,8 +87,14 @@ pub struct WebMember {
 )]
 #[schemars(example = "Self::example")]
 pub struct WebMemberSensitives {
+    /// The full qualified username of the member
+    pub full_username: String,
+    /// The common name of the member
+    pub common_name: String,
     /// The telephone numbers of the member
     pub mobile: Vec<String>,
+    /// Whether this member uses whatsapp or not
+    pub whatsapp: bool,
     /// The birthday of the member
     pub birthday: String,
     /// The mail addresses of the member
@@ -206,10 +212,13 @@ impl WebMember {
 impl SchemaExample for WebMemberSensitives {
     fn example() -> Self {
         Self {
+            full_username: "uid=karl".to_string(),
+            common_name: "uid=karl".to_string(),
             mobile: vec![
                 "+43 664 91828374".to_string(),
                 "+43 699 28184853".to_string(),
             ],
+            whatsapp: false,
             birthday: "1996-05-06".to_string(),
             mail: vec![
                 "joker@batman.org".to_string(),
@@ -223,7 +232,10 @@ impl SchemaExample for WebMemberSensitives {
 impl WebMemberSensitives {
     pub fn from_member(member: &Member) -> Self {
         Self {
+            full_username: member.full_username.clone(),
+            common_name: member.common_name.clone(),
             mobile: member.mobile.clone(),
+            whatsapp: member.whatsapp,
             birthday: member.birthday.to_string(),
             mail: member.mail.clone(),
             address: member.address.as_ref().map(WebAddress::from_address),
@@ -288,11 +300,14 @@ pub struct Address {
     pub country_code: String,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(crate = "rocket::serde", rename_all = "camelCase")]
+#[schemars(example = "Self::example")]
 pub struct Group {
     pub name: String,
     pub name_plural: String,
     pub description: String,
+    #[serde(skip)]
     pub members: Vec<String>,
 }
 
@@ -413,6 +428,17 @@ impl PartialOrd<Self> for Group {
 impl Ord for Group {
     fn cmp(&self, other: &Self) -> Ordering {
         self.name.cmp(&other.name)
+    }
+}
+
+impl SchemaExample for Group {
+    fn example() -> Self {
+        Self {
+            name: "root".to_string(),
+            name_plural: "root".to_string(),
+            description: "master of everything".to_string(),
+            members: vec![],
+        }
     }
 }
 

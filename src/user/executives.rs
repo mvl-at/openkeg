@@ -15,7 +15,6 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-use okapi::openapi3::{Object, SecurityRequirement, SecurityScheme, SecuritySchemeData};
 use rocket::http::Status;
 use rocket::outcome::Outcome::{Failure, Success};
 use rocket::request::{FromRequest, Outcome};
@@ -25,6 +24,7 @@ use rocket_okapi::request::{OpenApiFromRequest, RequestHeaderInput};
 
 use crate::config::ExecutiveMapping;
 use crate::member::model::Member;
+use crate::user::auth::bearer_documentation;
 use crate::{Config, MemberStateMutex};
 
 /// Provide the ability of read the group name out of the [`ExecutiveMapping`].
@@ -101,20 +101,6 @@ where
         _name: String,
         _required: bool,
     ) -> rocket_okapi::Result<RequestHeaderInput> {
-        let mut security_req = SecurityRequirement::new();
-        // Each security requirement needs to be met before access is allowed.
-        security_req.insert("executive roles".to_owned(), Vec::new());
-        Ok(RequestHeaderInput::Security(
-            "executive roles".to_string(),
-            SecurityScheme {
-                description: Some("Required for requests which need executive roles provided by a bearer token. Log in first to retrieve it".to_string()),
-                data: SecuritySchemeData::Http {
-                    scheme: "bearer".to_string(),
-                    bearer_format: Some("JWT".to_string()),
-                },
-                extensions: Object::default(),
-            },
-            security_req,
-        ))
+        bearer_documentation()
     }
 }

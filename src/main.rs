@@ -31,7 +31,7 @@ use rocket::{Build, Rocket};
 use rocket_okapi::mount_endpoints_and_merged_docs;
 
 use crate::config::Config;
-use crate::cors::Cors;
+use crate::cors::{cors_preflight, Cors};
 use crate::database::client::initialize_client;
 use crate::info::{get_info_routes_and_docs, ServerInfo};
 use crate::ldap::auth;
@@ -48,6 +48,8 @@ mod config;
 mod cors;
 /// Module which provides the interface to the database.
 mod database;
+/// Module for accessing documents and their assets from a WebDav server.
+mod document;
 /// Module which provides the server info.
 mod info;
 /// Module which handles the communication to the directory server.
@@ -58,8 +60,6 @@ mod member;
 mod openapi;
 /// Module which provides functionality for users in the context of the rest interface, not (only) member.
 mod user;
-/// Module for accessing documents and their assets from a WebDav server.
-mod document;
 
 pub type MemberStateMutex = Arc<RwLock<MemberState>>;
 
@@ -145,7 +145,7 @@ fn mount_controller_routes(mut rocket: Rocket<Build>) -> Rocket<Build> {
         "/documents" => document::get_document_routes_and_docs(&openapi_settings),
         "/members" => member::get_routes_and_docs(&openapi_settings),
         "/users" => user::get_routes_and_docs(&openapi_settings),
-    };
+    }
     rocket.mount("/", get_info_routes_and_docs(&openapi_settings).0.to_vec())
 }
 
@@ -200,7 +200,7 @@ fn manage_server_info(rocket: Rocket<Build>) -> Rocket<Build> {
 /// returns: Rocket<Build>
 fn attach_cors(rocket: Rocket<Build>) -> Rocket<Build> {
     info!("Create the CORS header and attach it");
-    rocket.attach(Cors)
+    rocket.attach(Cors).mount("/", routes![cors_preflight])
 }
 
 /// Let the server manage the private and the public key.

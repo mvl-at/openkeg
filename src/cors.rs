@@ -34,9 +34,19 @@ impl Fairing for Cors {
         response.set_header(Header::new("Access-Control-Allow-Origin", "*"));
         response.set_header(Header::new(
             "Access-Control-Allow-Methods",
-            "OPTIONS, HEAD, GET, POST, PUT, PATCH, DELETE",
+            "HEAD, GET, POST, PUT, PATCH, DELETE",
         ));
         response.set_header(Header::new("Access-Control-Allow-Headers", "*"));
         response.set_header(Header::new("Access-Control-Allow-Credentials", "true"));
+        response.set_header(Header::new(
+            "Access-Control-Expose-Headers",
+            "authorization, *",
+        ));
     }
+}
+
+/// Catch all options requests to ensure CORS preflight will not fail.
+#[options("/<_..>")]
+pub fn cors_preflight() {
+    debug!("Perform CORS Options preflight");
 }
