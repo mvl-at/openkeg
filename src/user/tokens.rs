@@ -18,19 +18,74 @@
 use chrono::Duration;
 use jsonwebtoken::errors::{Error, ErrorKind};
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation};
+use rocket::http::Status;
+use rocket::outcome::Outcome::{Failure, Forward, Success};
+use rocket::request::{FromRequest, Outcome};
 use rocket::serde::{Deserialize, Serialize};
+use rocket::Request;
+use rocket_okapi::gen::OpenApiGenerator;
+use rocket_okapi::request::{OpenApiFromRequest, RequestHeaderInput};
 
 use crate::member::model::Member;
 use crate::member::state::{AllMembers, Repository};
+use crate::user::auth::bearer_documentation;
 use crate::user::key::{PrivateKey, PublicKey};
 use crate::Config;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct Claims {
+pub struct Claims {
     pub(crate) sub: String,
     pub(crate) iss: String,
     pub(crate) exp: u64,
     pub(crate) ren: bool,
+    _private: (),
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for Claims {
+    type Error = ();
+
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let auth_header = request.headers().get_one("Authorization");
+        if auth_header.is_none() {
+            debug!("Request does not contain Authorization header");
+            return Forward(());
+        }
+        let bearer = String::from(auth_header.expect("Authentication header"));
+        let token_optional = bearer.strip_prefix("Bearer ");
+        if token_optional.is_none() {
+            debug!("Token does not start with Bearer");
+            return Forward(());
+        }
+        let token = token_optional.expect("Stripped token");
+        let public_key = request.rocket().state::<PublicKey>();
+        if let Some(pk) = public_key {
+            let claims_result = decode_claims(token, pk);
+            match claims_result {
+                Ok(claims) => Success(claims),
+                Err(err) => {
+                    warn!(
+                        "Provided a token which cannot be validated, maybe it is expired: {}",
+                        err
+                    );
+                    Failure((Status::Unauthorized, ()))
+                }
+            }
+        } else {
+            warn!("Unable to retrieve public key, requests using authentication will not work");
+            return Forward(());
+        }
+    }
+}
+
+impl<'r> OpenApiFromRequest<'r> for Claims {
+    fn from_request_input(
+        _gen: &mut OpenApiGenerator,
+        _name: String,
+        _required: bool,
+    ) -> rocket_okapi::Result<RequestHeaderInput> {
+        bearer_documentation()
+    }
 }
 
 /// Function to generate a jwt token.
@@ -61,6 +116,7 @@ pub(crate) fn generate_token(
         iss: config.jwt.issuer.to_string(),
         exp: expiration.timestamp() as u64,
         ren: renewal,
+        _private: (),
     };
     debug!("Private key length: {}", &private_key.0.len());
     let encoding_key = &EncodingKey::from_rsa_pem(private_key.0.as_slice()).map_err(|e| {
@@ -74,29 +130,55 @@ pub(crate) fn generate_token(
         .map_err(|e| warn!("Encoding error: {}", e))
 }
 
-/// Function to validate a jwt token.
-/// If the token is valid, the corresponding `Member` will be returned.
+/// Function to get the member from [`Claims`].
+/// The member will be searched by their username.
+/// If no user can be found, an error will be returned.
+/// This function does not check for any token validity.
+///  
+/// # Arguments
+///
+/// * `claims`: the jwt to validate
+/// * `renewal`: `true` of the token is expected to be a refresh token or `false` it is expected to be a request token
+/// * `member`: the member of the application
+///
+/// returns: Result<Member, ()>
+pub(crate) fn member_from_claims(
+    claims: Claims,
+    renewal: bool,
+    members: &AllMembers,
+) -> Result<Member, Error> {
+    if claims.ren != renewal {
+        info!("Tried to use refresh as request token or vice versa");
+        return Err(Error::from(ErrorKind::InvalidToken));
+    }
+    info!(
+        "Token issued by {} for {}, try to find member",
+        claims.iss, claims.sub
+    );
+    members
+        .find(&claims.sub)
+        .cloned()
+        .ok_or_else(|| Error::from(ErrorKind::InvalidToken))
+}
+
+/// Decode a [`Claims`] from a Bearer token string.
+/// This function also validates the content of the token i.e. the expiration and the signature.
+/// The token string must be in the raw JWT format, i.e. without a `Bearer ` prefix.
+///
 /// Validity in this context means:
 ///
 ///  * the token syntax is correct
 ///  * the token is not expired
 ///  * the token is signed by the key used by this application
 ///  * the token is expected to be a request/refresh token and is actual one
-///  
+///
 /// # Arguments
 ///
-/// * `token`: the jwt to validate
-/// * `renewal`: `true` of the token is expected to be a refresh token or `false` it is expected to be a request token
-/// * `member`: the member of the application
-/// * `public_key`: the public key used to ensure the signature
+/// * `token`: the token string to decode
+/// * `public_key`: the public key used for the signature verification
 ///
-/// returns: Result<Member, ()>
-pub fn validate_token(
-    token: &str,
-    renewal: bool,
-    members: &AllMembers,
-    public_key: &PublicKey,
-) -> Result<Member, Error> {
+/// returns: Result<Claims, Error>
+pub(crate) fn decode_claims(token: &str, public_key: &PublicKey) -> Result<Claims, Error> {
     let mut validation = Validation::default();
     validation.set_required_spec_claims(&["iss", "sub", "ren", "exp"]);
     validation.algorithms = vec![Algorithm::RS512];
@@ -114,16 +196,5 @@ pub fn validate_token(
             e
         })?
         .claims;
-    if claims.ren != renewal {
-        info!("Tried to use refresh as request token or vice versa");
-        return Err(Error::from(ErrorKind::InvalidToken));
-    }
-    info!(
-        "Token issued by {} for {} is valid, try to find member",
-        claims.iss, claims.sub
-    );
-    members
-        .find(&claims.sub)
-        .cloned()
-        .ok_or_else(|| Error::from(ErrorKind::InvalidToken))
+    Ok(claims)
 }

@@ -33,8 +33,7 @@ use rocket_okapi::response::OpenApiResponderInner;
 
 use crate::member::model::Member;
 use crate::openapi::ApiError;
-use crate::user::key::PublicKey;
-use crate::user::tokens::validate_token;
+use crate::user::tokens::{member_from_claims, Claims};
 use crate::MemberStateMutex;
 
 /// The basic auth structure as used in the HTTP protocol.
@@ -112,40 +111,25 @@ impl<'r> FromRequest<'r> for Member {
     type Error = ();
 
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        let auth_header = request.headers().get_one("Authorization");
-        if auth_header.is_none() {
-            debug!("Request does not contain Authorization header");
-            return Forward(());
-        }
-        let bearer = String::from(auth_header.expect("Authentication header"));
-        let token_optional = bearer.strip_prefix("Bearer ");
-        if token_optional.is_none() {
-            debug!("Token does not start with Bearer");
-            return Forward(());
-        }
-        let token = token_optional.expect("Stripped token");
         let members = request.rocket().state::<MemberStateMutex>();
         if members.is_none() {
             warn!("Unable to retrieve member, requests using authentication will not work");
             return Forward(());
         }
-        let public_key = request.rocket().state::<PublicKey>();
-        if public_key.is_none() {
-            warn!("Unable to retrieve public key, requests using authentication will not work");
-            return Forward(());
-        }
         let all_members = members.expect("Member read lock").read().await;
-        let member = validate_token(
-            token,
-            false,
-            &all_members.all_members,
-            public_key.expect("Public key"),
-        );
-        if member.is_err() {
-            debug!("Token was invalid");
-            return Failure((Status::Unauthorized, ()));
+        let claims_outcome = Claims::from_request(request).await;
+        match claims_outcome {
+            Failure(fail) => Failure(fail),
+            Forward(forward) => Forward(forward),
+            Success(claims) => {
+                let member = member_from_claims(claims, false, &all_members.all_members);
+                if member.is_err() {
+                    debug!("Token was invalid");
+                    return Failure((Status::Unauthorized, ()));
+                }
+                Success(member.expect("Extracted Member from token"))
+            }
         }
-        Success(member.expect("Extracted Member from token"))
     }
 }
 
