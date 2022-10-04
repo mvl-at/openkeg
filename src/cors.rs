@@ -15,6 +15,7 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+use crate::user::tokens::{AUTHORIZATION_HEADER, AUTHORIZATION_RENEWAL_HEADER};
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::Header;
 use rocket::{Request, Response};
@@ -40,7 +41,10 @@ impl Fairing for Cors {
         response.set_header(Header::new("Access-Control-Allow-Credentials", "true"));
         response.set_header(Header::new(
             "Access-Control-Expose-Headers",
-            "authorization, *",
+            format!(
+                "{}, {}, *",
+                AUTHORIZATION_HEADER, AUTHORIZATION_RENEWAL_HEADER
+            ),
         ));
     }
 }

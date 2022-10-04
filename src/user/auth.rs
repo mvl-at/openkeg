@@ -33,8 +33,9 @@ use rocket_okapi::response::OpenApiResponderInner;
 
 use crate::member::model::Member;
 use crate::openapi::ApiError;
-use crate::user::key::PublicKey;
-use crate::user::tokens::validate_token;
+use crate::user::tokens::{
+    member_from_claims, Claims, AUTHORIZATION_HEADER, AUTHORIZATION_RENEWAL_HEADER,
+};
 use crate::MemberStateMutex;
 
 /// The basic auth structure as used in the HTTP protocol.
@@ -51,7 +52,7 @@ impl<'r> FromRequest<'r> for BasicAuth {
     type Error = ();
 
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        let authorization_option = request.headers().get_one("Authorization");
+        let authorization_option = request.headers().get_one(AUTHORIZATION_HEADER);
         if authorization_option.is_none() {
             debug!("Skip credentials");
             return Forward(());
@@ -112,40 +113,25 @@ impl<'r> FromRequest<'r> for Member {
     type Error = ();
 
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        let auth_header = request.headers().get_one("Authorization");
-        if auth_header.is_none() {
-            debug!("Request does not contain Authorization header");
-            return Forward(());
-        }
-        let bearer = String::from(auth_header.expect("Authentication header"));
-        let token_optional = bearer.strip_prefix("Bearer ");
-        if token_optional.is_none() {
-            debug!("Token does not start with Bearer");
-            return Forward(());
-        }
-        let token = token_optional.expect("Stripped token");
         let members = request.rocket().state::<MemberStateMutex>();
         if members.is_none() {
             warn!("Unable to retrieve member, requests using authentication will not work");
             return Forward(());
         }
-        let public_key = request.rocket().state::<PublicKey>();
-        if public_key.is_none() {
-            warn!("Unable to retrieve public key, requests using authentication will not work");
-            return Forward(());
-        }
         let all_members = members.expect("Member read lock").read().await;
-        let member = validate_token(
-            token,
-            false,
-            &all_members.all_members,
-            public_key.expect("Public key"),
-        );
-        if member.is_err() {
-            debug!("Token was invalid");
-            return Failure((Status::Unauthorized, ()));
+        let claims_outcome = Claims::from_request(request).await;
+        match claims_outcome {
+            Failure(fail) => Failure(fail),
+            Forward(forward) => Forward(forward),
+            Success(claims) => {
+                let member = member_from_claims(claims, false, &all_members.all_members);
+                if member.is_err() {
+                    debug!("Token was invalid");
+                    return Failure((Status::Unauthorized, ()));
+                }
+                Success(member.expect("Extracted Member from token"))
+            }
         }
-        Success(member.expect("Extracted Member from token"))
     }
 }
 
@@ -183,7 +169,7 @@ pub fn bearer_documentation() -> rocket_okapi::Result<RequestHeaderInput> {
 pub struct AuthenticationResponder {
     pub(crate) request_token: Option<String>,
     pub(crate) request_token_required: bool,
-    pub(crate) renewal_token_present: bool,
+    pub(crate) renewal_token: Option<String>,
     pub(crate) renewal_token_required: bool,
 }
 
@@ -200,7 +186,7 @@ pub(crate) fn authorization_error() -> ApiError {
 impl<'r> Responder<'r, 'static> for AuthenticationResponder {
     fn respond_to(self, _request: &'r Request<'_>) -> rocket::response::Result<'static> {
         if (self.request_token.is_none() && self.request_token_required)
-            || (!self.renewal_token_present && self.renewal_token_required)
+            || (self.renewal_token.is_none() && self.renewal_token_required)
         {
             let body = serde_json::to_string(&authorization_error()).expect("serialized error");
             return rocket::response::Response::build()
@@ -212,7 +198,16 @@ impl<'r> Responder<'r, 'static> for AuthenticationResponder {
         let mut response_builder = rocket::response::Response::build();
         response_builder.header(ContentType::Text);
         if let Some(token) = self.request_token {
-            response_builder.header(Header::new("Authorization", format!("Bearer {}", token)));
+            response_builder.header(Header::new(
+                AUTHORIZATION_HEADER,
+                format!("Bearer {}", token),
+            ));
+        }
+        if let Some(token) = self.renewal_token {
+            response_builder.header(Header::new(
+                AUTHORIZATION_RENEWAL_HEADER,
+                format!("Bearer {}", token),
+            ));
         }
         response_builder.ok()
     }
@@ -221,14 +216,14 @@ impl<'r> Responder<'r, 'static> for AuthenticationResponder {
 impl OpenApiResponderInner for AuthenticationResponder {
     fn responses(_gen: &mut OpenApiGenerator) -> rocket_okapi::Result<Responses> {
         use okapi::openapi3::Header;
-        let auth_headers = map! {"Authorization".to_string() => RefOr::Object(Header{
+        let auth_headers = map! {AUTHORIZATION_HEADER.to_string() => RefOr::Object(Header{
             description: Some("The request token, prefixed with 'Bearer '".to_string()),
             required: false,
             deprecated: false,
             allow_empty_value: false,
             value: ParameterValue::Content {content: map!{}},
             extensions: map! {}
-        }),"Authorization-Renewal".to_string() => RefOr::Object(Header{
+        }),AUTHORIZATION_RENEWAL_HEADER.to_string() => RefOr::Object(Header{
             description: Some("The renewal token, prefixed with 'Bearer '".to_string()),
             required: false,
             deprecated: false,

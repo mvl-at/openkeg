@@ -16,9 +16,7 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 use rocket::form::validate::Contains;
-use rocket::http::{Cookie, CookieJar};
 use rocket::serde::json::Json;
-use rocket::time::OffsetDateTime;
 use rocket::State;
 use rocket_okapi::openapi;
 
@@ -26,8 +24,8 @@ use crate::auth::authenticate;
 use crate::member::model::{Group, Member, WebMember};
 use crate::openapi::{ApiError, ApiResult};
 use crate::user::auth::{authorization_error, AuthenticationResponder, BasicAuth};
-use crate::user::key::{PrivateKey, PublicKey};
-use crate::user::tokens::{generate_token, validate_token, Claims};
+use crate::user::key::PrivateKey;
+use crate::user::tokens::{generate_token, member_from_claims, Claims};
 use crate::{Config, MemberStateMutex};
 
 /// Login the user.
@@ -54,7 +52,6 @@ use crate::{Config, MemberStateMutex};
 #[post("/auth")]
 pub async fn login(
     auth: BasicAuth,
-    cookies: &CookieJar<'_>,
     private_key: &State<PrivateKey>,
     member_state: &State<MemberStateMutex>,
     config: &State<Config>,
@@ -73,7 +70,7 @@ pub async fn login(
             AuthenticationResponder {
                 request_token: None,
                 request_token_required: true,
-                renewal_token_present: false,
+                renewal_token: None,
                 renewal_token_required: true,
             }
         },
@@ -87,12 +84,10 @@ pub async fn login(
                 "Generated tokens {:?} and {:?}",
                 request_token, renewal_token
             );
-            let renewal_present = renewal_token.is_ok();
-            set_renewal_cookie(cookies, renewal_token);
             AuthenticationResponder {
                 request_token: request_token.ok().map(|(_claims, token)| token),
                 request_token_required: true,
-                renewal_token_present: renewal_present,
+                renewal_token: renewal_token.ok().map(|(_claims, token)| token),
                 renewal_token_required: true,
             }
         },
@@ -106,9 +101,8 @@ pub async fn login(
 ///
 /// # Arguments
 ///
-/// * `cookies`: the cookie jar to read the renewal token from
+/// * `claims`: the validated claims deserialized from the token
 /// * `private_key`: the private key to sign the new token with
-/// * `public_key`: the public key to verify the signature
 /// * `member_state`: the state with all members
 /// * `config`: the application configuration
 ///
@@ -116,26 +110,16 @@ pub async fn login(
 #[openapi(tag = "Self Service")]
 #[post("/renewal")]
 pub async fn login_with_renewal(
-    cookies: &CookieJar<'_>,
+    claims: Claims,
     private_key: &State<PrivateKey>,
-    public_key: &State<PublicKey>,
     member_state: &State<MemberStateMutex>,
     config: &State<Config>,
 ) -> Result<AuthenticationResponder, ApiError> {
-    let cookie = cookies.get("Renewal").ok_or_else(|| {
-        debug!("Cannot read renewal cookie");
-        authorization_error()
-    })?;
     let members_lock = member_state.read().await;
-    let renewal_token = cookie.value().strip_prefix("Bearer ").ok_or_else(|| {
-        debug!("Renewal cookie does not have prefix 'Bearer '");
+    let member = member_from_claims(claims, true, &members_lock.all_members).map_err(|err| {
+        info!("Cannot validate renewal token: {}", err);
         authorization_error()
     })?;
-    let member = validate_token(renewal_token, true, &members_lock.all_members, public_key)
-        .map_err(|err| {
-            info!("Cannot validate renewal token: {}", err);
-            authorization_error()
-        })?;
     let (_claims, token) = generate_token(&member, false, config, private_key).map_err(|_err| {
         info!("Cannot generate new token for {}", member.username);
         authorization_error()
@@ -143,7 +127,7 @@ pub async fn login_with_renewal(
     Ok(AuthenticationResponder {
         request_token: Some(token),
         request_token_required: true,
-        renewal_token_present: false,
+        renewal_token: None,
         renewal_token_required: false,
     })
 }
@@ -184,30 +168,4 @@ pub async fn executive_roles(
         .filter(|e| e.members.contains(member.full_username.clone()))
         .cloned();
     Ok(Json(groups.collect()))
-}
-
-/// Attach the renewal token to the `Renewal` cookie.
-/// The expiration of the cookie is the same as in the token.
-/// If the renewal token is an error, no cookie will be set.
-///
-/// # Arguments
-///
-/// * `cookies`: the cookie store to put the renewal token into
-/// * `renewal_token`: the result of the renewal token generation
-///
-/// returns: ()
-fn set_renewal_cookie(cookies: &CookieJar<'_>, renewal_token: Result<(Claims, String), ()>) {
-    if let Ok((claims, token)) = renewal_token {
-        let expiration = OffsetDateTime::from_unix_timestamp(claims.exp as i64);
-        match expiration {
-            Ok(offset_expiration) => {
-                let cookie_builder = Cookie::build("Renewal", format!("Bearer {}", token))
-                    .expires(offset_expiration);
-                cookies.add(cookie_builder.finish());
-            }
-            Err(err) => debug!("Failed to build offset time from unix time: {}", err),
-        }
-    } else {
-        debug!("Renewal token is not present");
-    }
 }
