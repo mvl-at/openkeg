@@ -40,7 +40,7 @@ impl Fairing for Cors {
         response.set_header(Header::new("Access-Control-Allow-Credentials", "true"));
         response.set_header(Header::new(
             "Access-Control-Expose-Headers",
-            "authorization, *",
+            "authorization, x-authorization-renewal, *",
         ));
     }
 }

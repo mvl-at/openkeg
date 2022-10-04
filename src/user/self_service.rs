@@ -16,9 +16,7 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 use rocket::form::validate::Contains;
-use rocket::http::{Cookie, CookieJar};
 use rocket::serde::json::Json;
-use rocket::time::OffsetDateTime;
 use rocket::State;
 use rocket_okapi::openapi;
 
@@ -54,7 +52,6 @@ use crate::{Config, MemberStateMutex};
 #[post("/auth")]
 pub async fn login(
     auth: BasicAuth,
-    cookies: &CookieJar<'_>,
     private_key: &State<PrivateKey>,
     member_state: &State<MemberStateMutex>,
     config: &State<Config>,
@@ -73,7 +70,7 @@ pub async fn login(
             AuthenticationResponder {
                 request_token: None,
                 request_token_required: true,
-                renewal_token_present: false,
+                renewal_token: None,
                 renewal_token_required: true,
             }
         },
@@ -87,12 +84,10 @@ pub async fn login(
                 "Generated tokens {:?} and {:?}",
                 request_token, renewal_token
             );
-            let renewal_present = renewal_token.is_ok();
-            set_renewal_cookie(cookies, renewal_token);
             AuthenticationResponder {
                 request_token: request_token.ok().map(|(_claims, token)| token),
                 request_token_required: true,
-                renewal_token_present: renewal_present,
+                renewal_token: renewal_token.ok().map(|(_claims, token)| token),
                 renewal_token_required: true,
             }
         },
@@ -132,7 +127,7 @@ pub async fn login_with_renewal(
     Ok(AuthenticationResponder {
         request_token: Some(token),
         request_token_required: true,
-        renewal_token_present: false,
+        renewal_token: None,
         renewal_token_required: false,
     })
 }
@@ -173,30 +168,4 @@ pub async fn executive_roles(
         .filter(|e| e.members.contains(member.full_username.clone()))
         .cloned();
     Ok(Json(groups.collect()))
-}
-
-/// Attach the renewal token to the `Renewal` cookie.
-/// The expiration of the cookie is the same as in the token.
-/// If the renewal token is an error, no cookie will be set.
-///
-/// # Arguments
-///
-/// * `cookies`: the cookie store to put the renewal token into
-/// * `renewal_token`: the result of the renewal token generation
-///
-/// returns: ()
-fn set_renewal_cookie(cookies: &CookieJar<'_>, renewal_token: Result<(Claims, String), ()>) {
-    if let Ok((claims, token)) = renewal_token {
-        let expiration = OffsetDateTime::from_unix_timestamp(claims.exp as i64);
-        match expiration {
-            Ok(offset_expiration) => {
-                let cookie_builder = Cookie::build("Renewal", format!("Bearer {}", token))
-                    .expires(offset_expiration);
-                cookies.add(cookie_builder.finish());
-            }
-            Err(err) => debug!("Failed to build offset time from unix time: {}", err),
-        }
-    } else {
-        debug!("Renewal token is not present");
-    }
 }
