@@ -35,15 +35,15 @@ use crate::Config;
 
 /// Try to fetch all scores from the database.
 /// Not recommended to use with too high `limit`.
-/// 
-/// # Arguments 
-/// 
+///
+/// # Arguments
+///
 /// * `conf`: the application configuration
 /// * `client`: the client to perform the database request with
 /// * `limit`: the limit of the returned rows
 /// * `skip`: how many rows should be skipped
-/// 
-/// returns: Result<Json<Pagination<Score>>, ApiError> 
+///
+/// returns: Result<Json<Pagination<Score>>, ApiError>
 pub async fn all_scores(
     conf: &Config,
     client: &Client,
@@ -152,7 +152,11 @@ pub async fn get_score(conf: &Config, client: &Client, id: String) -> ApiResult<
 /// * `conf`: the application configuration
 /// * `client`: the client to perform the request with
 /// * `score`: the score to insert
-pub async fn put_score<'de>(conf: &Config, client: &Client, mut score: Score) -> ApiResult<Score> {
+pub async fn put_score<'de>(
+    conf: &Config,
+    client: &Client,
+    mut score: Score,
+) -> ApiResult<OperationResponse> {
     if (score.couch_id.is_none() && score.couch_revision.is_some())
         || (score.couch_id.is_some() && score.couch_revision.is_none())
     {
