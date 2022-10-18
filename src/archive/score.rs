@@ -119,7 +119,7 @@ pub async fn put_score(
     _archive_role: ExecutiveRole<Archive>,
     conf: &State<Config>,
     client: &State<Client>,
-) -> ApiResult<Score> {
+) -> ApiResult<OperationResponse> {
     crate::database::score::put_score(conf, client, score.0).await
 }
 

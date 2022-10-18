@@ -29,7 +29,7 @@ pub struct Score {
     #[serde(rename = "_id")]
     pub couch_id: Option<String>,
     /// The revision of the document couch db is using
-    #[serde(rename = "_rev")]
+    #[serde(rename = "_rev", skip_serializing_if = "Option::is_none")]
     pub couch_revision: Option<String>,
     /// The legacy id of this score. Will be removed.
     #[deprecated]
