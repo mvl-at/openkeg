@@ -361,14 +361,36 @@ where
     Ok(deserialized_body)
 }
 
-/// Checks whether the provided `id` is part of the `partition` ot not.
+/// Checks if the document `id` starts with the `partition` string.
 ///
 /// # Arguments
 ///
-/// * `id`: the id to check
-/// * `partition`: the partition which could contain the `id`
+/// * `id` - A string slice containing the document ID.
+/// * `partition` - A string slice containing the partition to check against.
 ///
-/// returns: Result<(), Error>
+/// # Returns
+///
+/// If the `id` starts with the `partition` string, the function returns `Ok(())`.
+///
+/// Otherwise, it returns an error `ApiError` with the fields `err`, `msg`, and `http_status_code` set to the corresponding values.
+///
+/// # Errors
+///
+/// If the `id` does not start with the `partition` string, the function returns an `ApiError` with the error message "invalid id" and the message "the provided id starts with an invalid partition". The `http_status_code` is set to `Status::UnprocessableEntity.code`.
+///
+/// # Examples
+///
+/// ```
+/// let id = "partition:123";
+/// let partition = "partition:";
+/// let result = check_document_partition(id, partition);
+/// assert!(result.is_err());
+///
+/// let id = "invalid:123";
+/// let partition = "partition:";
+/// let result = check_document_partition(id, partition);
+/// assert!(result.is_err());
+/// ```
 pub(crate) fn check_document_partition(id: &str, partition: &str) -> Result<(), ApiError> {
     if id.starts_with(format!("{}:", partition).as_str()) {
         Ok(())
