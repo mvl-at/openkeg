@@ -59,7 +59,7 @@ impl Event {
             .iter()
             .map(|property| {
                 (
-                    property.name.to_string(),
+                    property.name.to_lowercase(),
                     EventProperty {
                         value: property.value.clone(),
                         params: property.params.clone().map_or(HashMap::new(), |params| {
@@ -67,7 +67,7 @@ impl Event {
                                 .iter()
                                 .map(|param| {
                                     let values: Vec<String> = param.1.clone();
-                                    (param.0.to_string(), values)
+                                    (param.0.to_lowercase(), values)
                                 })
                                 .collect()
                         }),
