@@ -11,26 +11,26 @@ license = "GPLv2"
 default = []
 
 [dependencies]
-rocket = { version = "0.5.0-rc.2", features = ["json"] }
-figment = { version = "0.10.6", features = ["env", "toml", "json"] }
-serde = "1.0.143"
-serde_json = { version = "1.0.83", features = ["preserve_order"] }
+rocket = { version = "0.5.0-rc.3", features = ["json"] }
+figment = { version = "0.10.8", features = ["env", "toml", "json"] }
+serde = "1.0.163"
+serde_json = { version = "1.0.96", features = ["preserve_order"] }
 rocket_okapi = { version = "0.8.0-rc.2" }
-schemars = "0.8.10"
+schemars = "0.8.12"
 okapi = { version = "0.7.0-rc.1", features = ["impl_json_schema", "preserve_order"] }
-ldap3 = "0.10.5"
-futures = "0.3.23"
-env_logger = "0.9.0"
+ldap3 = "0.11.1"
+futures = "0.3.28"
+env_logger = "0.10.0"
 log = "0.4.17"
-base64 = "0.20.0-alpha.1"
-jsonwebtoken = "8.1.1"
-chrono = "0.4.22"
-reqwest = { version = "0.11.11", features = ["cookies", "json", "serde_json"] }
-uuid = { version = "1.1.2", features = ["v4", "fast-rng"] }
+base64 = "0.21.1"
+jsonwebtoken = "8.3.0"
+chrono = "0.4.24"
+reqwest = { version = "0.11.18", features = ["cookies", "json", "serde_json"] }
+uuid = { version = "1.3.3", features = ["v4", "fast-rng"] }
 ical = "0.8.0"
 
 [dev-dependencies]
-regex = "1.6.0"
+regex = "1.8.1"
 
 [profile.release]
 opt-level = "s"

@@ -17,6 +17,7 @@
 
 use std::io::Cursor;
 
+use base64::{engine, Engine};
 use okapi::map;
 use okapi::openapi3::{
     Object, ParameterValue, RefOr, Response, Responses, SecurityRequirement, SecurityScheme,
@@ -62,9 +63,10 @@ impl<'r> FromRequest<'r> for BasicAuth {
             debug!("Header does not start with basic");
             return Forward(());
         }
-        let result = base64::decode(authorization.replace("Basic ", ""));
-        if result.is_err() {
-            debug!("Cannot base64 decode credentials");
+        let result =
+            engine::general_purpose::STANDARD_NO_PAD.decode(authorization.replace("Basic ", ""));
+        if let Err(err) = result {
+            debug!("Cannot base64 decode credentials {}", err);
             return Failure((Status::BadRequest, ()));
         }
         let user_password_bytes = result.expect("Base64 decoded password");
