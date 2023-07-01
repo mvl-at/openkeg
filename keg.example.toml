@@ -46,3 +46,7 @@ archive = "Archivare"
 [default.document_server.mapping]
 blackboard = "blackboard"
 blackboard_assets = "blackboard/Bilder"
+
+[default.calendar]
+ical_url = "https://example.org/events.ics"
+ical_internal_url = "https://example.org/internal.ics"
