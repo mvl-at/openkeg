@@ -1,5 +1,5 @@
 // OpenKeg, the lightweight backend of the Musikverein Leopoldsdorf.
-// Copyright (C) 2022  Richard Stöckl
+// Copyright (C) 2022-2023  Richard Stöckl
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -44,6 +44,8 @@ pub struct Config {
     pub static_directory_url: String,
     /// The configuration for the document server.
     pub document_server: DocumentServer,
+    /// The configuration for the calendar.
+    pub calendar: CalendarConfig,
 }
 
 /// The configuration of the directory server.
@@ -424,6 +426,24 @@ impl Default for DocumentMapping {
         Self {
             blackboard: "".to_string(),
             blackboard_assets: "".to_string(),
+        }
+    }
+}
+
+/// The configuration related to calendar.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CalendarConfig {
+    /// The URL to the ical which contains all events to show to the public.
+    pub ical_url: String,
+    /// The URL to the ical which contains all events which are for internal usage only such as preparations.
+    pub ical_internal_url: String,
+} 
+
+impl Default for CalendarConfig {
+    fn default() -> Self {
+        Self {
+            ical_url: "".to_string(),
+            ical_internal_url: "".to_string(),
         }
     }
 }
