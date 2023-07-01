@@ -24,20 +24,12 @@ use rocket_okapi::JsonSchema;
 use crate::openapi::SchemaExample;
 
 /// The type of the calendar.
-#[derive(Serialize, Default, Deserialize, JsonSchema, FromFormField)]
-#[schemars(example = "Self::example")]
+/// The public calendar which contains events everybody can attend.
+/// An internal calendar which contains preparations, exercises and similar events.
+#[derive(Serialize, Deserialize, JsonSchema, FromFormField)]
 pub enum CalendarType {
-    /// The public calendar which contains events everybody can attend.
-    #[default]
     Public,
-    /// An internal calendar which contains preparations, exercises and similar events.
     Internal,
-}
-
-impl SchemaExample for CalendarType {
-    fn example() -> Self {
-        CalendarType::Public
-    }
 }
 
 /// An event which is a simple excerpt from an ical calendar.
