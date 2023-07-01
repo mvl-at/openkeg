@@ -41,6 +41,7 @@ pub enum CalendarType {
 pub struct Event {
     /// The map which contains all properties.
     /// Maps property names to the values.
+    #[serde(flatten)]
     properties: HashMap<String, EventProperty>,
 }
 
