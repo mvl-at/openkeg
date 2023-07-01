@@ -56,11 +56,12 @@ pub async fn get_all_events(cal_type: CalendarType, conf: &State<Config>) -> Api
         CalendarType::Public => &calendar_config.ical_url,
         CalendarType::Internal => &calendar_config.ical_internal_url,
     };
+    log::debug!("Fetch calendar from {}", url);
     let ical_body_future = reqwest::get(url).await.map_err(|e| {
         log::error!("Unable to retrieve the calendar from the ical url {}", e);
         upstream_error()
     })?;
-    let ical_body = ical_body_future.bytes().await.map_err(|e| {
+    let ical_body = ical_body_future.text().await.map_err(|e| {
         log::error!("Unable to read the body from the calendar response {}", e);
         upstream_error()
     })?;
