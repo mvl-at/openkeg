@@ -42,6 +42,8 @@ use crate::user::key::{read_private_key, read_public_key};
 
 /// Module which handles the archive rest interface.
 mod archive;
+/// Module which is responsible to fetch information about the calendar.
+mod calendar;
 /// Module which handles the application configuration.
 mod config;
 /// Module which adds HTTP CORS to the application server.
@@ -143,6 +145,7 @@ fn mount_controller_routes(mut rocket: Rocket<Build>) -> Rocket<Build> {
         "/books" => archive::get_books_routes_and_docs(&openapi_settings),
         "/statistics" => archive::get_statistics_routes_and_docs(&openapi_settings),
         "/documents" => document::get_document_routes_and_docs(&openapi_settings),
+        "/calendar" => calendar::get_routes_and_docs(&openapi_settings),
         "/members" => member::get_routes_and_docs(&openapi_settings),
         "/users" => user::get_routes_and_docs(&openapi_settings),
     }
