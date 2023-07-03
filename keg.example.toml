@@ -19,6 +19,7 @@ register_filter = "(objectClass=mvlGroup)"
 executives_base = "ou=Exekutive,ou=Divisionen,dc=mvl,dc=at"
 executives_filter = "(objectClass=mvlGroup)"
 password = "Ibimsdastaschasserkoal"
+title_ordering = ["Obmann", "Kapellmeister", "Kassier", "Stabführer", "Archivar", "Jugendreferent", "Medienreferent", "Ehrenobmann", "Ehrenkapellmeister"]
 
 [default.database]
 url = "http://127.0.0.1:5984"

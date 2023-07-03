@@ -47,7 +47,7 @@ pub async fn synchronize_members_and_groups(conf: &Config, member_state: &mut Me
     let (
         mut members_vector,
         mut sutlers_vector,
-        mut honorary_option,
+        mut honorary_vector,
         mut registers_vector,
         mut executives_vector,
     ) = result.expect("member vectors - checked above");
@@ -55,15 +55,15 @@ pub async fn synchronize_members_and_groups(conf: &Config, member_state: &mut Me
     info!("Done fetching, begin with transformation");
     let mut member_state_lock = member_state.write().await;
     fill_primitive_collections(
+        conf,
         &mut member_state_lock,
         &mut members_vector,
         &mut sutlers_vector,
-        &mut honorary_option,
+        &mut honorary_vector,
         &mut registers_vector,
         &mut executives_vector,
     );
     debug!("Done with copying data, begin with sorting");
-
     construct_members_by_register(&mut member_state_lock, members_vector, registers_vector);
     info!("Done with user synchronization")
 }
@@ -91,6 +91,7 @@ fn construct_members_by_register(
 
 /// Helper function to sort and assign primitive collections.
 fn fill_primitive_collections(
+    conf: &Config,
     member_state: &mut MemberState,
     member_vector: &mut Vec<Member>,
     sutler_vector: &mut Vec<Member>,
@@ -100,17 +101,20 @@ fn fill_primitive_collections(
 ) {
     member_state.all_members.clear();
     member_vector.sort();
+    *member_vector = sort_titles_attributes(conf, member_vector);
     member_state
         .all_members
         .extend(member_vector.iter().cloned());
     member_state.sutlers.clear();
     sutler_vector.sort();
-    member_state.sutlers.extend(sutler_vector.iter().cloned());
+    member_state
+        .sutlers
+        .extend(sort_titles_attributes(conf, sutler_vector));
     member_state.honorary_members.clear();
     honorary_vector.sort();
     member_state
         .honorary_members
-        .extend(honorary_vector.iter().cloned());
+        .extend(sort_titles_attributes(conf, honorary_vector));
     member_state.registers.clear();
     registers_vector.sort();
     member_state
@@ -216,4 +220,62 @@ pub async fn member_synchronization_task(conf: &Config, member_state: &mut Membe
         info!("Running scheduled user synchronization");
         synchronize_members_and_groups(conf, member_state).await;
     }
+}
+
+/// Sorts the titles attributes of members based on the configuration specified in `conf`.
+///
+/// # Arguments
+///
+/// * `conf` - A [Config] struct that contains the configuration information for sorting titles.
+/// * `members` - A vector of [Member] structs that represent the members to sort.
+///
+/// # Returns
+///
+/// The function returns a new vector of [Member] structs with the titles attributes sorted according to the configuration.
+///
+/// # Examples
+///
+/// ```
+/// let conf = Config::new();
+/// let members = vec![Member::new("John", vec!["Title3", "Title1", "Title2"])];
+/// let result = sort_titles_attributes(&conf, &members);
+/// assert_eq!(result[0].titles, vec!["Title1", "Title2", "Title3"]);
+/// ```
+fn sort_titles_attributes(conf: &Config, members: &Vec<Member>) -> Vec<Member> {
+    members
+        .iter()
+        .map(|m| {
+            let mut titles = m.titles.clone();
+            sort_titles_vector(conf, &mut titles);
+            Member {
+                titles,
+                ..m.clone()
+            }
+        })
+        .collect()
+}
+
+/// Sorts a vector of titles based on the title ordering configuration specified in `conf` inplace.
+///
+/// # Arguments
+///
+/// * `conf` - A `Config` struct that contains the configuration information for sorting titles.
+/// * `titles` - A mutable reference to a vector of strings representing the titles to sort.
+///
+/// # Examples
+///
+/// ```
+/// let conf = Config::new();
+/// let mut titles = vec!["Title3", "Title1", "Title2"];
+/// sort_titles_vector(&conf, &mut titles);
+/// assert_eq!(titles, vec!["Title1", "Title2", "Title3"]);
+/// ```
+fn sort_titles_vector(conf: &Config, titles: &mut Vec<String>) {
+    titles.sort_by_cached_key(|t| {
+        conf.ldap
+            .title_ordering
+            .iter()
+            .position(|e| e == t)
+            .unwrap_or(0)
+    });
 }
