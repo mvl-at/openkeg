@@ -63,10 +63,9 @@ impl<'r> FromRequest<'r> for BasicAuth {
             debug!("Header does not start with basic");
             return Forward(());
         }
-        let result =
-            engine::general_purpose::STANDARD_NO_PAD.decode(authorization.replace("Basic ", ""));
+        let result = engine::general_purpose::STANDARD.decode(authorization.replace("Basic ", ""));
         if let Err(err) = result {
-            debug!("Cannot base64 decode credentials {}", err);
+            warn!("Cannot base64 decode credentials {}", err);
             return Failure((Status::BadRequest, ()));
         }
         let user_password_bytes = result.expect("Base64 decoded password");
