@@ -88,6 +88,8 @@ pub struct LdapConfig {
     pub group_mapping: GroupMapping,
     /// The mapping of the executive roles.
     pub executive_mapping: ExecutiveMapping,
+    /// The ordering of the titles.
+    pub title_ordering: Vec<String>,
 }
 
 impl Default for LdapConfig {
@@ -111,6 +113,7 @@ impl Default for LdapConfig {
             address_mapping: Default::default(),
             group_mapping: Default::default(),
             executive_mapping: Default::default(),
+            title_ordering: Default::default(),
         }
     }
 }
@@ -437,7 +440,7 @@ pub struct CalendarConfig {
     pub ical_url: String,
     /// The URL to the ical which contains all events which are for internal usage only such as preparations.
     pub ical_internal_url: String,
-} 
+}
 
 impl Default for CalendarConfig {
     fn default() -> Self {
