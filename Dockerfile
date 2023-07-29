@@ -22,6 +22,11 @@ RUN --mount=type=cache,target=/workspace/target \
     sh /workspace/docker-multiarch-build.sh
 
 FROM --platform=$TARGETPLATFORM alpine
+
+RUN apk update && \
+    apk --no-cache add ca-certificates && \
+    rm -rf /var/cache/apk
+
 ARG TARGETARCH
 COPY --from=build /target/release/openkeg.$TARGETARCH /bin/openkeg
 
